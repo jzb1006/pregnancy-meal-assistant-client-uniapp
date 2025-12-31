@@ -4,6 +4,7 @@
      
      <WeekCalendar 
         :activeDate="activeDate"
+        :lmp="lmp"
         @dateSelect="setActiveDate"
      />
 
@@ -13,89 +14,120 @@
         @complete="navigateToProfile"
      />
 
-     <ActionGrid 
-        :actions="actions"
-        @click="handleActionClick"
-     />
+     <!-- Pregnancy Animation Video -->
+     <view class="video-card">
+        <video 
+            class="anim-video"
+            src="/static/video/pregnancy_cycle.mp4"
+            autoplay
+            loop
+            muted
+            :controls="false"
+            :show-center-play-btn="false"
+            object-fit="cover"
+        ></video>
+     </view>
+
+
+     
+     <CustomTabBar :current="0" />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { request } from '@/utils/request';
 import PageContainer from '@/components/common/PageContainer.vue';
 import WelcomeHeader from '@/components/home/WelcomeHeader.vue';
 import WeekCalendar from '@/components/home/WeekCalendar.vue';
 import StatusCard from '@/components/home/StatusCard.vue';
-import ActionGrid from '@/components/home/ActionGrid.vue';
-import type { ActionItem } from '@/components/home/ActionGrid.vue';
+import CustomTabBar from '@/components/common/CustomTabBar.vue';
+import dayjs from 'dayjs';
 
 const userStore = useUserStore();
-const activeDate = ref(new Date().getDate());
+const activeDate = ref(dayjs().format('YYYY-MM-DD'));
 const status = ref<any>(null);
+const lmp = ref('');
 const loading = ref(true);
 
-const actions: ActionItem[] = [
-    {
-      title: 'AI 点餐',
-      subtitle: 'Generate your meal plan',
-      iconName: 'play-circle',
-      variant: 'peach',
-      route: '/pages/recommend/recommend',
-    },
-    {
-      title: '历史记录',
-      subtitle: 'Review your meals',
-      iconName: 'clock',
-      variant: 'mint',
-      route: '/pages/history/history',
-    },
-];
+
 
 const fetchStatus = async () => {
     try {
-        // Use await with type assertion or data checking
         const res: any = await request({
             url: '/v1/user/status',
             data: { openId: userStore.openId }
         });
         
-        // Adapt response structure
         if (res && (res.code === 200 || res.status === 200)) {
             status.value = res.data;
         } else {
-             // Mock data for development
-             status.value = { week: 24, day: 3 };
+             // specific error handled globally or via toast below
+             if (res.message) uni.showToast({ title: res.message, icon: 'none' });
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error('Fetch status failed', e);
-        // Fallback mock
-        status.value = { week: 24, day: 3 }; 
+        const errorData = e?.data || {};
+        const msg = errorData.message || errorData.msg; 
+        if (msg) funcShowToast(msg);
     } finally {
         loading.value = false;
     }
 }
 
-onMounted(() => {
+const fetchUserInfo = async () => {
+    try {
+        const res: any = await request({
+            url: '/v1/user/info',
+            data: { openId: userStore.openId }
+        });
+        if (res && res.code === 200 && res.data) {
+             if (res.data.lmp) {
+                 lmp.value = dayjs(res.data.lmp).format('YYYY-MM-DD');
+             }
+        }
+    } catch (e) {
+        console.error('Fetch info failed', e);
+    }
+}
+
+const funcShowToast = (title: string) => {
+    uni.showToast({ title, icon: 'none' });
+}
+
+onShow(() => {
     fetchStatus();
+    fetchUserInfo();
 });
 
-const setActiveDate = (day: number) => {
-    activeDate.value = day;
+const setActiveDate = (date: string) => {
+    activeDate.value = date;
 }
 
 const navigateToProfile = () => {
-    uni.navigateTo({ url: '/pages/profile/profile' });
+    uni.switchTab({ url: '/pages/profile/profile' });
 }
 
-const handleActionClick = (route: string) => {
-    uni.navigateTo({ 
-        url: route,
-        fail: (err) => {
-            console.error('Nav fail', err);
-            uni.showToast({ title: '页面开发中', icon: 'none' });
-        }
-    });
-}
+
+
 </script>
+
+<style lang="scss" scoped>
+.video-card {
+    width: 100%;
+    height: 220px;
+    background: #000;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    
+    .anim-video {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+}
+</style>

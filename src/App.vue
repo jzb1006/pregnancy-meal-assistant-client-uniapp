@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { useUserStore } from '@/stores/user';
+
 onLaunch(() => {
   console.log("App Launch");
+  uni.hideTabBar();
+  
+  const userStore = useUserStore();
+  if (!userStore.openId) {
+      // Delay slightly to ensure framework is ready
+      setTimeout(() => {
+          uni.reLaunch({ url: '/pages/login/login' });
+      }, 100);
+  }
 });
 onShow(() => {
   console.log("App Show");

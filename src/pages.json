@@ -3,25 +3,36 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "孕期饮食助手"
+				"navigationBarTitleText": "孕期饮食助手",
+				"enablePullDownRefresh": false
 			}
 		},
 		{
 			"path": "pages/recommend/recommend",
 			"style": {
-				"navigationBarTitleText": "AI 营养师"
+				"navigationBarTitleText": "AI 营养师",
+				"enablePullDownRefresh": false
 			}
 		},
 		{
 			"path": "pages/history/history",
 			"style": {
-				"navigationBarTitleText": "历史记录"
+				"navigationBarTitleText": "历史记录",
+				"enablePullDownRefresh": false
 			}
 		},
 		{
 			"path": "pages/profile/profile",
 			"style": {
-				"navigationBarTitleText": "个人中心"
+				"navigationBarTitleText": "个人中心",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
 			}
 		}
 	],
@@ -30,5 +41,35 @@
 		"navigationBarTitleText": "孕期饮食助手",
 		"navigationBarBackgroundColor": "#ffffff",
 		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#94a3b8",
+		"selectedColor": "#f43f5e",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/recommend/recommend",
+				"text": "AI点餐"
+			},
+			{
+				"pagePath": "pages/history/history",
+				"text": "历史"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "我的"
+			}
+		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+		}
 	}
 }
