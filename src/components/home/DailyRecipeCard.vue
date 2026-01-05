@@ -152,50 +152,123 @@ const tips = [
 const currentTipIndex = ref(0);
 let intervalId: number | null = null;
 
+const parseStreamResponse = (input: any): any => {
+    // 0. If already an object...
+    if (typeof input === 'object' && input !== null && !(input instanceof ArrayBuffer)) {
+        return input;
+    }
+    
+    if (!input) return {}; 
+
+    let cleanText = '';
+
+    // 1. Handle ArrayBuffer
+    if (input instanceof ArrayBuffer) {
+        try {
+            // @ts-ignore
+            if (typeof TextDecoder !== 'undefined') {
+                // @ts-ignore
+                const decoder = new TextDecoder('utf-8');
+                cleanText = decoder.decode(input);
+            } else {
+                // @ts-ignore
+                cleanText = String.fromCharCode.apply(null, new Uint8Array(input));
+                try { cleanText = decodeURIComponent(escape(cleanText)); } catch (e) {}
+            }
+        } catch (e) {
+            console.error("ArrayBuffer Decode Error", e);
+            throw new Error("响应解码失败");
+        }
+    } else {
+        cleanText = String(input).trim();
+    }
+
+    if (!cleanText) return {};
+
+    // 2. Handle SSE (data: prefix) - Accumulate ALL fragments
+    let combinedPayload = '';
+    
+    if (cleanText.includes("data:")) {
+        const events = cleanText.split(/\n\n+/); 
+        
+        for (const event of events) {
+            if (!event.trim()) continue;
+            
+            const lines = event.split('\n');
+            for (const line of lines) {
+                const trimmed = line.trim();
+                // Skip [DONE]
+                if (trimmed.includes('[DONE]')) continue;
+                
+                if (trimmed.startsWith('data:')) {
+                    combinedPayload += trimmed.replace(/^data:\s*/, '');
+                } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                     // Handle data without prefix
+                     combinedPayload += trimmed;
+                } else if (!trimmed.startsWith('event:') && !trimmed.startsWith('id:') && !trimmed.startsWith(':')) {
+                    // Try to catch raw lines that might be part of the content if split weirdly
+                    combinedPayload += trimmed;
+                }
+            }
+        }
+    } else {
+        // Not SSE, use raw text
+        combinedPayload = cleanText;
+    }
+    
+    // If we extracted something, use it; otherwise fallback to original
+    let textToParse = combinedPayload || cleanText;
+
+    // 3. Handle Markdown
+    const codeBlockMatch = textToParse.match(/```json\s*([\s\S]*?)\s*```/) || textToParse.match(/```\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+        textToParse = codeBlockMatch[1];
+    }
+
+    // 4. Extract JSON
+    const firstOpen = textToParse.search(/[\{\[]/);
+    const lastClose = Math.max(textToParse.lastIndexOf('}'), textToParse.lastIndexOf(']'));
+    
+    if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+        textToParse = textToParse.substring(firstOpen, lastClose + 1);
+    }
+
+    // 5. Attempt Parse
+    try {
+        return JSON.parse(textToParse);
+    } catch (e) {
+        console.error("JSON Parse Error:", e, "Input Type:", typeof input, "Text:", textToParse.substring(0, 100));
+        throw new Error("解析响应失败 (Format Error)");
+    }
+};
+
 const loadDailyRecommendation = async () => {
   try {
     let fullText = '';
-    await getDailyRecommendation(userStore.openId, (chunk) => {
+    const res: any = await getDailyRecommendation(userStore.openId, (chunk) => {
         fullText += chunk;
     });
-
     
-    // Parse SSE
-    if (fullText.includes("data:")) {
-         const events = fullText.split(/\n\n/);
-         let payload = '';
-         for (const event of events) {
-             if (!event.trim()) continue;
-             const lines = event.split(/\n/);
-             const eventData = lines
-                .filter(line => line.startsWith("data:"))
-                .map(line => line.replace(/^data:\s*/, ''))
-                .join('\n');
-             payload += eventData;
-         }
-         fullText = payload;
+    if (!fullText && res && res.data) {
+        fullText = res.data; 
     }
 
-    // Parse JSON
-    const jsonMatch = fullText.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-    if (jsonMatch) {
-        fullText = jsonMatch[0];
-    } else if (fullText.includes("```")) {
-        fullText = fullText.replace(/```json/g, "").replace(/```/g, "");
-    }
-
-    console.log('DailyRec Parsed JSON:', fullText);
-    const result = JSON.parse(fullText);
+    const result = parseStreamResponse(fullText);
     
-    // Check for backend error response
     if (result.code && result.code !== 0 && result.code !== 200) {
          throw new Error(result.message || 'Load Error');
     }
     
-    recipe.value = result;
+    let rawData = result;
+    if (result.data && (result.code === 200 || result.code === 0)) {
+        rawData = result.data;
+    }
+
+    // Direct assignment as backend now matches MealVO structure
+    recipe.value = rawData as MealVO;
+
   } catch (e) {
     console.error('Load Error:', e);
-    if (e.data) console.error('Error Details:', e.data);
   }
 };
 
@@ -233,44 +306,27 @@ const handleMore = async () => {
     let fullText = '';
     
     try {
-        await swapRecommendation(userStore.openId, (chunk) => {
+        const res: any = await swapRecommendation(userStore.openId, (chunk) => {
             fullText += chunk;
         });
 
-
-        
-        // Parse SSE
-        if (fullText.includes("data:")) {
-             const events = fullText.split(/\n\n/);
-             let payload = '';
-             for (const event of events) {
-                 if (!event.trim()) continue;
-                 const lines = event.split(/\n/);
-                 const eventData = lines
-                    .filter(line => line.startsWith("data:"))
-                    .map(line => line.replace(/^data:\s*/, ''))
-                    .join('\n');
-                 payload += eventData;
-             }
-             fullText = payload;
+        if (!fullText && res && res.data) {
+            fullText = res.data; 
         }
 
-        // Parse JSON
-        const jsonMatch = fullText.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-        if (jsonMatch) {
-            fullText = jsonMatch[0];
-        } else if (fullText.includes("```")) {
-            fullText = fullText.replace(/```json/g, "").replace(/```/g, "");
-        }
+        const result = parseStreamResponse(fullText);
         
-        const result = JSON.parse(fullText);
-        
-        // Check for backend error response (e.g. { code: 3000, message: "..." })
         if (result.code && result.code !== 0 && result.code !== 200) {
             throw new Error(result.message || 'Error');
         }
         
-        recipe.value = result;
+        let rawData = result;
+        if (result.data && (result.code === 200 || result.code === 0)) {
+            rawData = result.data;
+        }
+        
+        recipe.value = rawData as MealVO;
+        
         uni.showToast({ title: '已为您更换推荐', icon: 'success' });
     } catch (e: any) {
         const elapsed = Date.now() - startTime;

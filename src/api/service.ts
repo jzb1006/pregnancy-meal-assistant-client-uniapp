@@ -83,7 +83,7 @@ export const getDailyRecommendation = (openId: string, onChunk: (text: string) =
 
 export const swapRecommendation = (openId: string, onChunk: (text: string) => void) => {
     return streamRequest({
-        url: `/v1/daily-meal/swap?openId=${openId}`,
+        url: `/v1/daily-meal/swap?openId=${openId}&_t=${Date.now()}`,
         method: 'POST',
         data: {}
     }, onChunk);
