@@ -151,7 +151,7 @@ const startRecommend = () => {
 
     // SSE Connection (H5 Compatible)
     // NOTE: For Mini Program, need to implement manual chunk reading via uni.request({ enableChunked: true })
-    const url = `http://localhost:8080/api/v1/meal/recommend/stream?openId=${userStore.openId}&mealType=${currentType.value}`;
+    const url = `http://192.168.4.85:8080/api/v1/meal/recommend/stream?openId=${userStore.openId}&mealType=${currentType.value}`;
     
     // Check if EventSource is supported (H5 / App-Webview)
     if (typeof EventSource !== 'undefined') {

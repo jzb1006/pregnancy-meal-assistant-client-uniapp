@@ -36,13 +36,16 @@ const tabs = [
 ];
 
 onMounted(() => {
-    uni.hideTabBar();
+    // uni.hideTabBar(); // Native tabbar is removed via pages.json
 });
 
 const currentPath = computed(() => tabs[props.current].pagePath);
 
 const switchTab = (item: any) => {
-    uni.switchTab({
+    // Since native tabBar is disabled, use reLaunch to simulate tab switch
+    if (currentPath.value === item.pagePath) return;
+    
+    uni.reLaunch({
         url: '/' + item.pagePath
     });
 }

@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/user';
 
 onLaunch(() => {
   console.log("App Launch");
-  uni.hideTabBar();
+  // uni.hideTabBar();
   
   const userStore = useUserStore();
   if (!userStore.openId) {
