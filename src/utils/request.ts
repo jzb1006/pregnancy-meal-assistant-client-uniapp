@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = 'http://192.168.4.66:8080/api';
 
 interface RequestOptions extends UniApp.RequestOptions {
     // Add any custom options here
@@ -38,52 +38,67 @@ export const request = (options: RequestOptions) => {
     });
 };
 
-
-
 export const streamRequest = (options: RequestOptions, onChunk: (text: string) => void) => {
     return new Promise((resolve, reject) => {
+        let requestTask: any;
+
+        // Use native wx.request if available to ensure we get ArrayBuffer and avoid UniApp wrapper interference
         // @ts-ignore
-        const decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8') : null;
-
-        const requestTask = uni.request({
-            ...options,
-            url: options.url?.startsWith('http') ? options.url : `${BASE_URL}${options.url}`,
-            enableChunked: true,
-            header: {
-                ...options.header,
-            },
-            success: (res) => {
-                if (res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve(res);
-                } else {
-                    reject(res);
+        if (typeof wx !== 'undefined' && wx.request) {
+            // @ts-ignore
+            requestTask = wx.request({
+                ...options,
+                url: options.url?.startsWith('http') ? options.url : `${BASE_URL}${options.url}`,
+                enableChunked: true,
+                responseType: 'text',
+                header: {
+                    ...options.header,
+                },
+                success: (res: any) => {
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(res);
+                    } else {
+                        reject(res);
+                    }
+                },
+                fail: (err: any) => {
+                    reject(err);
                 }
-            },
-            fail: (err) => {
-                reject(err);
-            }
-        });
+            });
+        } else {
+            requestTask = uni.request({
+                ...options,
+                url: options.url?.startsWith('http') ? options.url : `${BASE_URL}${options.url}`,
+                enableChunked: true,
+                responseType: 'text',
+                header: {
+                    ...options.header,
+                },
+                success: (res) => {
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(res);
+                    } else {
+                        reject(res);
+                    }
+                },
+                fail: (err) => {
+                    reject(err);
+                }
+            });
+        }
 
-        requestTask.onChunkReceived((response) => {
-            const arrayBuffer = response.data;
-            if (decoder) {
-                const text = decoder.decode(arrayBuffer, { stream: true });
-                if (text) onChunk(text);
+        requestTask.onChunkReceived((response: any) => {
+            // With responseType: 'text', response.data is already a UTF-8 decoded string
+            if (response.data && typeof response.data === 'string') {
+                console.log('[StreamRequest] Received chunk, length:', response.data.length);
+                console.log('[StreamRequest] Chunk preview:', response.data.substring(0, 100));
+                onChunk(response.data);
             } else {
-                // Fallback for environments without TextDecoder (might break multi-byte chars)
-                // @ts-ignore
-                const text = String.fromCharCode.apply(null, new Uint8Array(arrayBuffer));
-                // Decode utf-8 manually if needed, but for now this is best effort
-                // A better fallback is needed for production if TextDecoder is missing
-                // For MVP/Demo we assume TextDecoder exists (H5/Modern App)
-                // Simple UTF8 decode logic is too complex to inline here without library
-                // Let's assume most environments have TextDecoder or at least support basic chars
-                // For Chinese, manual decoding is required if TextDecoder is missing.
-                // But most likely it is present.
-                if (text) onChunk(decodeURIComponent(escape(text))); // Try this hack for UTF8
+                console.warn('[StreamRequest] Unexpected data type:', typeof response.data);
             }
         });
     });
 };
 
+// 添加默认导出以确保文件被依赖分析识别
 export default request;

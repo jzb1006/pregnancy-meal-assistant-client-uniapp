@@ -73,18 +73,27 @@ export const getNutritionTip = (openId: string) => {
 };
 
 // Daily Meal API
-export const getDailyRecommendation = (openId: string, onChunk: (text: string) => void) => {
-    return streamRequest({
+export const getDailyRecommendation = (openId: string) => {
+    return unwrap(request({
         url: '/v1/daily-meal/recommend',
         method: 'GET',
         data: { openId }
-    }, onChunk);
+    }));
 };
 
-export const swapRecommendation = (openId: string, onChunk: (text: string) => void) => {
-    return streamRequest({
+
+export const swapRecommendation = (openId: string) => {
+    return unwrap(request({
         url: `/v1/daily-meal/swap?openId=${openId}&_t=${Date.now()}`,
         method: 'POST',
         data: {}
-    }, onChunk);
+    }));
+};
+
+// 添加默认导出以确保文件被依赖分析识别
+export default {
+    checkFoodSafety,
+    getNutritionTip,
+    getDailyRecommendation,
+    swapRecommendation
 };
