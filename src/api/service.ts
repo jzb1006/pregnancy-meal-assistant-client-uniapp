@@ -26,6 +26,26 @@ export interface MealVO {
         fat: number;
         carbohydrate: number;
     };
+    feedbackAction?: 'LIKE' | 'DISLIKE' | 'BORED';
+    mealType?: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+    createTime?: string;
+}
+
+export interface HistorySearchParams {
+    openId: string;
+    dishName?: string;
+    feedbackAction?: 'LIKE' | 'DISLIKE' | 'BORED';
+    mealType?: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+    page?: number;
+    size?: number;
+}
+
+export interface PageResult<T> {
+    list: T[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
 }
 
 // Helper to unwrap Result<T>
@@ -90,10 +110,29 @@ export const swapRecommendation = (openId: string) => {
     }));
 };
 
+// Meal History API
+export const getMealHistory = (params: HistorySearchParams) => {
+    return unwrap(request({
+        url: '/v1/meal/history',
+        method: 'GET',
+        data: params
+    }));
+};
+
+export const getMealDetail = (openId: string, recipeId: number) => {
+    return unwrap(request({
+        url: `/v1/meal/history/${recipeId}`,
+        method: 'GET',
+        data: { openId }
+    }));
+};
+
 // 添加默认导出以确保文件被依赖分析识别
 export default {
     checkFoodSafety,
     getNutritionTip,
     getDailyRecommendation,
-    swapRecommendation
+    swapRecommendation,
+    getMealHistory,
+    getMealDetail
 };
