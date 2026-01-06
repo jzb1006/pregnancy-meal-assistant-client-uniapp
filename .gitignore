@@ -22,3 +22,6 @@ dist
 
 /.idea
 /.npm-cache
+
+# WeChat Mini Program
+project.private.config.json
