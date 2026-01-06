@@ -235,7 +235,7 @@ const handleFeedback = async (action: 'LIKE' | 'DISLIKE') => {
 
 <style lang="scss" scoped>
 .content-container {
-    padding: 20px;
+    padding: 10px;
     padding-bottom: 100px;
 }
 

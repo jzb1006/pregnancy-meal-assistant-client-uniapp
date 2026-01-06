@@ -12,7 +12,9 @@
 .page-container {
   min-height: 100vh;
   background-color: #f8f9fc;
-  padding: 20px 16px;
+  padding: 0;
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
 }
 </style>
