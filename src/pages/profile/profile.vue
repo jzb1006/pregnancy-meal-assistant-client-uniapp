@@ -1,128 +1,229 @@
 <template>
   <PageContainer>
-    <u-navbar title="我的档案" @leftClick="goBack" :placeholder="true" autoBack></u-navbar>
-    
-    <view class="form-container">
-      <u-form labelPosition="left" :model="model" :rules="rules" ref="form1" labelWidth="100">
-        
-        <!-- Basic Info Section -->
-        <view class="section-title">基本信息</view>
-        
-        <u-form-item label="末次月经" prop="lmp" @click="showLmp = true; hideKeyboard()">
-          <u-input v-model="model.lmp" disabled disabledColor="#ffffff" placeholder="请选择日期" border="none"></u-input>
-          <u-icon slot="right" name="arrow-right"></u-icon>
-        </u-form-item>
+    <!-- Custom Navbar -->
+    <u-navbar 
+        :title="isEditing ? '编辑档案' : '个人中心'" 
+        :bgColor="isEditing ? '#fff' : 'transparent'" 
+        :leftIcon="isEditing ? 'close' : ''"
+        @leftClick="cancelEdit" 
+        :placeholder="isEditing"
+        :titleStyle="{ color: isEditing ? '#333' : '#fff', fontWeight: 'bold' }"
+    ></u-navbar>
 
-        <u-form-item label="出生日期" prop="birthDate" @click="showBirth = true; hideKeyboard()">
-          <u-input v-model="model.birthDate" disabled disabledColor="#ffffff" placeholder="请选择日期" border="none"></u-input>
-          <u-icon slot="right" name="arrow-right"></u-icon>
-        </u-form-item>
-
-        <u-form-item label="身高(cm)" prop="height" borderBottom @click="showHeight = true; hideKeyboard()">
-           <u-input 
-                v-model="model.height" 
-                disabled 
-                disabledColor="#ffffff" 
-                placeholder="请选择身高" 
-                border="none" 
-                inputAlign="right"
-            ></u-input>
-           <u-icon slot="right" name="arrow-right"></u-icon>
-        </u-form-item>
-
-        <u-form-item label="体重(kg)" prop="weight" borderBottom @click="showWeight = true; hideKeyboard()">
-           <u-input 
-                v-model="model.weight" 
-                disabled 
-                disabledColor="#ffffff" 
-                placeholder="请选择体重" 
-                border="none" 
-                inputAlign="right"
-            ></u-input>
-           <u-icon slot="right" name="arrow-right"></u-icon>
-        </u-form-item>
-
-        <!-- Preferences Section -->
-        <view class="section-title">个人偏好</view>
-
-        <u-form-item label="菜系偏好" prop="cuisine" labelPosition="top">
-            <view class="cuisine-grid">
-                <view 
-                    class="cuisine-item" 
-                    v-for="(item, index) in cuisineOptions" 
-                    :key="index"
-                    :class="{ active: model.cuisine === item.value }"
-                    @click="model.cuisine = item.value"
-                >
-                    {{ item.label }}
+    <!-- DASHBOARD MODE -->
+    <view v-if="!isEditing" class="dashboard-container">
+        <!-- Header Section -->
+        <view class="header-bg">
+            <view class="user-info">
+                <view class="avatar-box">
+                    <u-image src="/static/logo.png" width="70px" height="70px" shape="circle"></u-image>
+                </view>
+                <view class="text-box">
+                    <text class="nickname">准妈妈</text>
+                    <text class="status-badge" v-if="pregnancyProgress.weeks >= 0">
+                        孕期 {{ pregnancyProgress.weeks }}周 + {{ pregnancyProgress.days }}天
+                    </text>
                 </view>
             </view>
-        </u-form-item>
+            
+            <!-- Pregnancy Progress Card -->
+            <view class="progress-card">
+                 <view class="progress-row">
+                     <view class="p-item">
+                         <text class="label">末次月经</text>
+                         <text class="value">{{ model.lmp || '未设置' }}</text>
+                     </view>
+                     <view class="divider"></view>
+                     <view class="p-item">
+                         <text class="label">预产期 (预计)</text>
+                         <text class="value highlight">{{ derivedDueDate }}</text>
+                     </view>
+                 </view>
+            </view>
+        </view>
 
-        <u-form-item label="口味偏好" prop="preferences" labelPosition="top">
-            <u-textarea v-model="model.preferences" placeholder="例如：清淡、酸辣、多蔬菜..." count></u-textarea>
-        </u-form-item>
+        <view class="card-area">
+            <!-- Health Archive Card -->
+             <view class="info-card">
+                <view class="card-header">
+                    <view class="title-row">
+                        <u-icon name="file-text-fill" color="#f43f5e" size="20"></u-icon>
+                        <text class="card-title">健康档案</text>
+                    </view>
+                    <view class="edit-link" @click="startEdit">
+                        <u-icon name="edit-pen" color="#94a3b8" size="18"></u-icon>
+                        <text>修改</text>
+                    </view>
+                </view>
+                <view class="grid-info">
+                    <view class="grid-item">
+                        <text class="label">身高</text>
+                        <text class="val">{{ model.height }} <text class="unit">cm</text></text>
+                    </view>
+                    <view class="grid-item">
+                        <text class="label">孕前体重</text>
+                        <text class="val">{{ model.weight }} <text class="unit">kg</text></text>
+                    </view>
+                     <view class="grid-item">
+                        <text class="label">BMI</text>
+                        <text class="val">{{ bmiValue }}</text>
+                    </view>
+                </view>
+            </view>
 
-        <u-form-item label="忌口/过敏" prop="taboo" labelPosition="top">
-            <u-textarea v-model="model.taboo" placeholder="例如：海鲜、花生、香菜..." count></u-textarea>
-        </u-form-item>
+            <!-- Dietary Preferences Card -->
+             <view class="info-card">
+                <view class="card-header">
+                     <view class="title-row">
+                        <u-icon name="heart-fill" color="#f43f5e" size="20"></u-icon>
+                        <text class="card-title">饮食偏好</text>
+                    </view>
+                </view>
+                <view class="pref-content">
+                    <view class="pref-row">
+                        <text class="label">菜系偏好：</text>
+                         <view class="tag-wrap">
+                             <u-tag :text="getCuisineLabel(model.cuisine)" plain size="mini" type="error" shape="circle"></u-tag>
+                         </view>
+                    </view>
+                     <view class="pref-row">
+                        <text class="label">口味偏好：</text>
+                        <text class="text-val">{{ model.preferences || '暂无详细描述' }}</text>
+                    </view>
+                    <view class="pref-row">
+                        <text class="label">忌口/过敏：</text>
+                        <text class="text-val">{{ model.taboo || '无' }}</text>
+                    </view>
+                </view>
+            </view>
 
-      </u-form>
+            <!-- Menu List -->
+            <view class="menu-list">
+                <u-cell-group :border="false">
+                     <u-cell icon="star" title="我的收藏" isLink :border="false" clickable @click="handleToFavorites"></u-cell>
 
-      <view class="submit-btn">
-          <u-button 
-            type="primary" 
-            text="保存档案" 
-            shape="circle" 
-            color="linear-gradient(90deg, #fda4af, #f43f5e)"
-            :loading="loading"
-            @click="submit"
-          ></u-button>
-      </view>
+                     <u-cell icon="kefu-ermai" title="意见反馈" isLink :border="false"></u-cell>
+                     <u-cell icon="info-circle" title="关于我们" isLink :border="false"></u-cell>
+                </u-cell-group>
+            </view>
+
+            <!-- Logout Button -->
+             <view class="logout-box">
+                 <u-button type="info" text="退出登录" plain shape="circle" @click="handleLogout"></u-button>
+             </view>
+        </view>
+    </view>
+
+    <!-- EDIT MODE (Refined Split Layout) -->
+    <view v-else class="edit-container">
+       <u-form labelPosition="top" :model="model" :rules="rules" ref="form1">
+           
+           <!-- Card 1: Basic Info -->
+           <view class="form-card">
+                <view class="section-header">
+                    <text class="emoji">📝</text>
+                    <text class="title">基础档案</text>
+                </view>
+                
+                <div class="grid-row">
+                    <div class="grid-col">
+                        <u-form-item label="末次月经" prop="lmp" :borderBottom="false" @click="showLmp = true; hideKeyboard()">
+                          <view class="bubble-input">
+                              <u-input v-model="model.lmp" disabled disabledColor="transparent" placeholder="请选择" border="none"></u-input>
+                              <u-icon name="calendar" color="#94a3b8" size="18"></u-icon>
+                          </view>
+                        </u-form-item>
+                    </div>
+                    <div class="grid-col">
+                        <u-form-item label="出生日期" prop="birthDate" :borderBottom="false" @click="showBirth = true; hideKeyboard()">
+                          <view class="bubble-input">
+                              <u-input v-model="model.birthDate" disabled disabledColor="transparent" placeholder="请选择" border="none"></u-input>
+                              <u-icon name="gift" color="#94a3b8" size="18"></u-icon>
+                          </view>
+                        </u-form-item>
+                    </div>
+                </div>
+
+                <div class="grid-row">
+                    <div class="grid-col">
+                         <u-form-item label="身高 (cm)" prop="height" :borderBottom="false" @click="showHeight = true; hideKeyboard()">
+                           <view class="bubble-input">
+                               <u-input v-model="model.height" disabled disabledColor="transparent" placeholder="身高" border="none" inputAlign="center"></u-input>
+                           </view>
+                        </u-form-item>
+                    </div>
+                    <div class="grid-col">
+                         <u-form-item label="体重 (kg)" prop="weight" :borderBottom="false" @click="showWeight = true; hideKeyboard()">
+                           <view class="bubble-input">
+                               <u-input v-model="model.weight" disabled disabledColor="transparent" placeholder="体重" border="none" inputAlign="center"></u-input>
+                           </view>
+                        </u-form-item>
+                    </div>
+                </div>
+           </view>
+
+           <!-- Card 2: Preferences -->
+           <view class="form-card">
+                <view class="section-header">
+                    <text class="emoji">🍽️</text>
+                    <text class="title">饮食偏好</text>
+                </view>
+
+                <u-form-item label="菜系偏好" prop="cuisine" :borderBottom="false">
+                    <view class="cuisine-grid">
+                        <view 
+                            class="cuisine-item-bubble" 
+                            v-for="(item, index) in cuisineOptions" 
+                            :key="index"
+                            :class="{ active: model.cuisine === item.value }"
+                            @click="model.cuisine = item.value"
+                        >
+                            {{ item.label }}
+                        </view>
+                    </view>
+                </u-form-item>
+
+                <u-form-item label="口味详细描述" prop="preferences" :borderBottom="false">
+                    <view class="bubble-textarea">
+                        <u-textarea v-model="model.preferences" placeholder="例如：清淡、酸辣、多蔬菜..." count height="70" disabledColor="transparent" border="none"></u-textarea>
+                    </view>
+                </u-form-item>
+
+                <u-form-item label="忌口与过敏源" prop="taboo" :borderBottom="false">
+                    <view class="bubble-textarea">
+                        <u-textarea v-model="model.taboo" placeholder="例如：海鲜、花生、香菜..." count height="70" border="none"></u-textarea>
+                    </view>
+                </u-form-item>
+           </view>
+       </u-form>
+
+        <!-- Sticky Footer Action Area -->
+        <view class="action-footer">
+            <u-button 
+                type="primary" 
+                text="保存档案" 
+                shape="circle" 
+                color="linear-gradient(90deg, #fda4af, #f43f5e)"
+                :loading="loading"
+                @click="submit"
+                customStyle="height: 48px; font-size: 16px; font-weight: bold; box-shadow: 0 8px 16px rgba(244, 63, 94, 0.25);"
+            ></u-button>
+            <view class="cancel-text" @click="cancelEdit">放弃修改</view>
+        </view>
     </view>
     
-    <!-- Pickers -->
-    <u-datetime-picker
-        :show="showLmp"
-        v-model="lmpTimestamp"
-        mode="date"
-        :maxDate="Number(new Date())"
-        @confirm="confirmLmp"
-        @cancel="showLmp = false"
-    ></u-datetime-picker>
+    <!-- Pickers (Shared) -->
+    <u-datetime-picker :show="showLmp" v-model="lmpTimestamp" mode="date" :maxDate="Number(new Date())" @confirm="confirmLmp" @cancel="showLmp = false"></u-datetime-picker>
+    <u-datetime-picker :show="showBirth" v-model="birthTimestamp" mode="date" :minDate="new Date(1960, 0, 1).getTime()" :maxDate="Number(new Date())" @confirm="confirmBirth" @cancel="showBirth = false"></u-datetime-picker>
+    <u-picker :show="showHeight" :columns="heightColumns" title="选择身高" @confirm="confirmHeight" @cancel="showHeight = false"></u-picker>
+    <u-picker :show="showWeight" :columns="weightColumns" title="选择体重" @confirm="confirmWeight" @cancel="showWeight = false"></u-picker>
 
-    <u-datetime-picker
-        :show="showBirth"
-        v-model="birthTimestamp"
-        mode="date"
-        :minDate="new Date(1960, 0, 1).getTime()"
-        :maxDate="Number(new Date())"
-        @confirm="confirmBirth"
-        @cancel="showBirth = false"
-    ></u-datetime-picker>
-
-    <u-picker 
-        :show="showHeight" 
-        :columns="heightColumns" 
-        title="选择身高"
-        @confirm="confirmHeight" 
-        @cancel="showHeight = false"
-    ></u-picker>
-
-    <u-picker 
-        :show="showWeight" 
-        :columns="weightColumns" 
-        title="选择体重"
-        @confirm="confirmWeight" 
-        @cancel="showWeight = false"
-    ></u-picker>
-
-    <CustomTabBar :current="3" />
+    <CustomTabBar :current="3" v-if="!isEditing" />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { request } from '@/utils/request';
 import PageContainer from '@/components/common/PageContainer.vue';
@@ -130,7 +231,9 @@ import CustomTabBar from '@/components/common/CustomTabBar.vue';
 import dayjs from 'dayjs';
 
 const userStore = useUserStore();
+const isEditing = ref(false); // Mode Toggle
 const loading = ref(false);
+
 const showLmp = ref(false);
 const showBirth = ref(false);
 const showHeight = ref(false);
@@ -138,16 +241,17 @@ const showWeight = ref(false);
 const lmpTimestamp = ref(Number(new Date()));
 const birthTimestamp = ref(Number(new Date()));
 
-// Generate picker columns
-// Height: 140cm - 200cm
-const heightColumns = reactive([
-    Array.from({length: 61}, (_, i) => i + 140)
-]);
-
-// Weight: 35.0kg - 100.0kg (step 0.5)
-const weightColumns = reactive([
-    Array.from({length: 131}, (_, i) => (35 + i * 0.5).toFixed(1))
-]);
+// --- Data Models ---
+const heightColumns = reactive([Array.from({length: 61}, (_, i) => i + 140)]);
+const weightColumns = reactive([Array.from({length: 131}, (_, i) => (35 + i * 0.5).toFixed(1))]);
+const cuisineOptions = [
+    { label: '中餐 🥢', value: 'CHINESE' },
+    { label: '西餐 🍴', value: 'WESTERN' },
+    { label: '日韩 🍱', value: 'JAPANESE_KOREAN' },
+    { label: '东南亚 🌶️', value: 'SOUTHEAST_ASIAN' },
+    { label: '素食 🥬', value: 'VEGETARIAN' },
+    { label: '不限 🌍', value: 'NO_PREFERENCE' },
+];
 
 const model = reactive({
     lmp: '',
@@ -166,38 +270,81 @@ const rules = {
     weight: { required: true, message: '请选择体重', trigger: ['change'] }
 };
 
-const cuisineOptions = [
-    { label: '中餐 🥢', value: 'CHINESE' },
-    { label: '西餐 🍴', value: 'WESTERN' },
-    { label: '日韩 🍱', value: 'JAPANESE_KOREAN' },
-    { label: '东南亚 🌶️', value: 'SOUTHEAST_ASIAN' },
-    { label: '素食 🥬', value: 'VEGETARIAN' },
-    { label: '不限 🌍', value: 'NO_PREFERENCE' },
-];
+// --- Computed Logic ---
+const derivedDueDate = computed(() => {
+    if (!model.lmp) return '请设置末次月经';
+    // Naegele's rule: LMP + 280 days (40 weeks)
+    return dayjs(model.lmp).add(280, 'day').format('YYYY-MM-DD');
+});
 
-const goBack = () => {
-    uni.navigateBack();
-}
+const pregnancyProgress = computed(() => {
+    if (!model.lmp) return { weeks: 0, days: 0 };
+    const start = dayjs(model.lmp);
+    const now = dayjs();
+    const diffDays = now.diff(start, 'day');
+    
+    if (diffDays < 0) return { weeks: 0, days: 0 }; // LMP in future?
+    
+    return {
+        weeks: Math.floor(diffDays / 7),
+        days: diffDays % 7
+    };
+});
 
-const hideKeyboard = () => {
-    uni.hideKeyboard();
-}
+const bmiValue = computed(() => {
+    if (!model.height || !model.weight) return '--';
+    const h = model.height / 100; // cm to m
+    return (model.weight / (h * h)).toFixed(1);
+});
+
+// --- Methods ---
+const startEdit = () => {
+    isEditing.value = true;
+};
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    fetchInfo(); // Revert changes
+};
+
+const getCuisineLabel = (val: string) => {
+    const found = cuisineOptions.find(o => o.value === val);
+    return found ? found.label : val;
+};
+
+const handleToFavorites = () => {
+    // Set flag for History page to pick up
+    uni.setStorageSync('HISTORY_FILTER_PENDING', { feedback: 'LIKE' });
+    uni.switchTab({ url: '/pages/history/history' });
+};
+
+const handleLogout = () => {
+    uni.showModal({
+        title: '提示',
+        content: '确定要退出登录吗？',
+        success: (res) => {
+            if (res.confirm) {
+                userStore.logout();
+                uni.reLaunch({ url: '/pages/login/login' });
+            }
+        }
+    });
+};
+
+const hideKeyboard = () => uni.hideKeyboard();
 
 const confirmLmp = (e: any) => {
     showLmp.value = false;
     model.lmp = dayjs(e.value).format('YYYY-MM-DD');
 }
-
 const confirmBirth = (e: any) => {
     showBirth.value = false;
     model.birthDate = dayjs(e.value).format('YYYY-MM-DD');
 }
-
 const confirmHeight = (e: any) => {
     model.height = Number(e.value[0]);
     showHeight.value = false;
 }
-
 const confirmWeight = (e: any) => {
     model.weight = Number(e.value[0]);
     showWeight.value = false;
@@ -205,29 +352,18 @@ const confirmWeight = (e: any) => {
 
 const fetchInfo = async () => {
     if (!userStore.openId) {
-        uni.showToast({ title: '未找到用户信息，请重新登录', icon: 'none' });
-        setTimeout(() => uni.reLaunch({ url: '/pages/login/login' }), 1500);
-        return;
+        // Just allow view for now, maybe show skeleton
+        return; 
     }
-
     try {
-        const res: any = await request({
-            url: '/v1/user/info',
-            data: { openId: userStore.openId }
-        });
-        
-        console.log('Profile Fetch Res:', res);
-
-        if (res && res.code === 200) {
-             const data = res.data || {}; // Safety check
-             
+        const res: any = await request({ url: '/v1/user/info', data: { openId: userStore.openId } });
+        if (res && res.code === 200 && res.data) {
+             const data = res.data;
              model.lmp = data.lmp ? dayjs(data.lmp).format('YYYY-MM-DD') : '';
              model.birthDate = data.birthDate ? dayjs(data.birthDate).format('YYYY-MM-DD') : '';
-             
              if (model.lmp) lmpTimestamp.value = dayjs(model.lmp).valueOf();
              if (model.birthDate) birthTimestamp.value = dayjs(model.birthDate).valueOf();
-
-             // Setup fields with defaults if missing
+             
              const h = Number(data.height);
              const w = Number(data.weight);
              if (!isNaN(h)) model.height = h;
@@ -236,31 +372,17 @@ const fetchInfo = async () => {
              model.cuisine = data.cuisinePreference || 'NO_PREFERENCE';
              model.preferences = data.preferences || '';
              model.taboo = data.dietaryRestrictions || '';
-
-        } else {
-             // Handle 401 specifically if needed, otherwise generic error
-             const msg = res?.message || res?.msg || '获取档案失败';
-             uni.showToast({ title: msg, icon: 'none' });
-             
-             if (res?.code === 401 || res?.code === 403) {
-                 setTimeout(() => uni.redirectTo({ url: '/pages/login/login' }), 1500);
-             }
         }
-    } catch (e: any) {
-        console.error('Fetch Info Error:', e);
-        const errMsg = e?.errMsg || '网络请求失败';
-        uni.showToast({ title: `加载失败: ${errMsg}`, icon: 'none' });
-    } finally {
-        // loading.value = false; // Not using loading for fetch currently
+    } catch (e) {
+        console.error(e);
     }
 }
 
 const submit = async () => {
     if (!model.lmp || !model.birthDate) {
-        uni.showToast({ title: '请填写完整日期', icon: 'none' });
+        uni.showToast({ title: '日期不完整', icon: 'none' });
         return;
     }
-    
     loading.value = true;
     try {
         const payload = {
@@ -273,24 +395,18 @@ const submit = async () => {
             preferences: model.preferences,
             cuisinePreference: model.cuisine
         };
-        
-        const res: any = await request({
-            url: '/v1/user/profile',
-            method: 'POST',
-            data: payload
-        });
+        const res: any = await request({ url: '/v1/user/profile', method: 'POST', data: payload });
         
         if (res.code === 200) {
-            uni.showToast({ title: '档案已更新', icon: 'success' });
-            // User requested to stay on page
+            uni.showToast({ title: '已保存', icon: 'success' });
+            setTimeout(() => {
+                isEditing.value = false; // Switch back to dashboard
+            }, 800);
         } else {
-            uni.showToast({ title: res.message || res.msg || '更新失败', icon: 'none' });
+             uni.showToast({ title: res.message || '保存失败', icon: 'none' });
         }
-    } catch (e: any) {
-        console.error(e);
-        const errorData = e?.data || {};
-        const msg = errorData.message || errorData.msg || '网络请求失败';
-        uni.showToast({ title: msg, icon: 'none' });
+    } catch (e) {
+        uni.showToast({ title: '请求失败', icon: 'none' });
     } finally {
         loading.value = false;
     }
@@ -302,50 +418,278 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.form-container {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    margin-top: 10px;
-    padding-bottom: 100px; 
+/* Dashboard Styles */
+.dashboard-container {
+    padding-bottom: 120px;
+    background: #f8f9fc;
+    min-height: 100vh;
+}
 
-    .section-title {
-        font-size: 16px;
-        font-weight: bold;
-        color: #333;
-        margin: 20px 0 10px 0;
-    }
-
-    .row-container {
+.header-bg {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+    padding: 100px 12px 60px 12px; /* Reduced side padding */
+    border-bottom-left-radius: 20px; /* Gently reduced radius */
+    border-bottom-right-radius: 20px;
+    color: #fff;
+    position: relative;
+    margin-bottom: 50px;
+    
+    .user-info {
         display: flex;
         align-items: center;
-        width: 100%;
-        .slider-box { flex: 1; margin-right: 15px; }
-        .input-box { width: 70px; }
-    }
-
-    .cuisine-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        .cuisine-item {
-            width: 30%;
-            text-align: center;
-            padding: 10px 0;
-            border-radius: 12px;
-            font-size: 11px;
-            color: #64748b;
-            background: #f8f9fc;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-            
-            &.active {
-                background: #ffe4e6;
-                color: #f43f5e;
-                box-shadow: 0 2px 8px rgba(244, 63, 94, 0.15);
+        margin-bottom: 30px;
+        
+        .avatar-box {
+            border: 3px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            margin-right: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .text-box {
+            .nickname {
+                font-size: 22px;
                 font-weight: bold;
+                display: block;
+                margin-bottom: 6px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            }
+            .status-badge {
+                background: rgba(255,255,255,0.25);
+                backdrop-filter: blur(5px);
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 500;
             }
         }
     }
-    .submit-btn { margin-top: 40px; }
+
+    .progress-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 20px;
+        position: absolute;
+        bottom: -30px;
+        left: 12px;
+        right: 12px;
+        box-shadow: 0 8px 20px rgba(255, 107, 129, 0.15);
+        color: #333;
+        
+        .progress-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            
+            .p-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+                .value { font-size: 16px; font-weight: bold; color: #475569; }
+                .highlight { color: #f43f5e; } /* Highlight Due Date */
+            }
+            .divider { width: 1px; height: 30px; background: #eee; }
+        }
+    }
+}
+
+.card-area {
+    padding: 0 10px;
+    
+    .info-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            
+            .title-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                .card-title { font-size: 16px; font-weight: bold; color: #1e293b; }
+            }
+            
+            .edit-link {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 13px;
+                color: #94a3b8;
+            }
+        }
+        
+        .grid-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            
+            .grid-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                .label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+                .val { font-size: 18px; font-weight: bold; color: #334155; }
+                .unit { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 2px;}
+            }
+        }
+
+        .pref-content {
+            .pref-row {
+                margin-bottom: 8px;
+                display: flex;
+                align-items: flex-start;
+                font-size: 14px;
+                &:last-child { margin-bottom: 0; }
+                
+                .label {
+                    color: #94a3b8;
+                    width: 80px;
+                    flex-shrink: 0;
+                }
+                .text-val {
+                    color: #475569;
+                    line-height: 1.4;
+                }
+                .tag-wrap { display: flex; }
+            }
+        }
+    }
+    
+    .menu-list {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+    
+    .logout-box {
+        margin-bottom: 40px;
+    }
+}
+
+/* Edit Mode Unique Styles */
+.edit-container {
+    padding: 12px;
+    padding-top: 100px;
+    background: #f8f9fc;
+    min-height: 100vh;
+    padding-bottom: 150px; /* Space for sticky footer */
+
+    .form-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 16px; /* Spacing between cards */
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        border: 1px solid rgba(255,255,255,0.6);
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            
+            .emoji { font-size: 20px; margin-right: 8px; }
+            .title { font-size: 17px; font-weight: bold; color: #334155; }
+        }
+
+        .grid-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 0px; 
+            .grid-col { flex: 1; min-width: 0; }
+        }
+
+        /* Bubble Input Styles */
+        .bubble-input {
+            background: #f8fafc; /* Lighter background */
+            border-radius: 14px;
+            padding: 4px 12px;
+            display: flex;
+            align-items: center;
+            height: 46px;
+            width: 100%;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            
+            &:active {
+                background: #f1f5f9;
+            }
+        }
+        
+        .bubble-textarea {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 8px;
+            width: 100%;
+        }
+
+        /* Cuisine Bubbles */
+        .cuisine-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            .cuisine-item-bubble {
+                padding: 8px 14px;
+                border-radius: 18px;
+                font-size: 12px;
+                color: #64748b;
+                background: #f8fafc;
+                border: 1px solid transparent;
+                transition: all 0.2s;
+                font-weight: 500;
+                
+                &.active {
+                    background: #fff1f2;
+                    color: #f43f5e;
+                    border-color: #fecdd3;
+                    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.1);
+                }
+            }
+        }
+
+        // Force labels to not wrap
+        :deep(.u-form-item__body__left__content__label) {
+            white-space: nowrap !important;
+            word-break: keep-all;
+            color: #64748b !important;
+            font-size: 13px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        // Remove standard form item border
+        :deep(.u-form-item__body) {
+            padding: 10px 0 !important;
+        }
+    }
+    
+    .action-footer {
+        position: fixed;
+        bottom: 0; 
+        left: 0;
+        right: 0;
+        background: #ffffff; /* Solid white */
+        padding: 12px 24px;
+        padding-bottom: calc(12px + constant(safe-area-inset-bottom));
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+        z-index: 100;
+        
+        .cancel-text {
+            text-align: center;
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 10px;
+            padding-bottom: 0;
+        }
+    }
 }
 </style>
