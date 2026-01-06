@@ -4,27 +4,33 @@
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "孕期饮食助手",
-				"enablePullDownRefresh": false
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{
 			"path": "pages/recommend/recommend",
 			"style": {
 				"navigationBarTitleText": "AI 营养师",
-				"enablePullDownRefresh": false
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{
 			"path": "pages/history/history",
 			"style": {
 				"navigationBarTitleText": "历史记录",
-				"enablePullDownRefresh": false
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{
 			"path": "pages/profile/profile",
 			"style": {
 				"navigationBarTitleText": "个人中心",
+				"navigationStyle": "custom",
 				"enablePullDownRefresh": false
 			}
 		},
@@ -49,10 +55,45 @@
 		"navigationBarBackgroundColor": "#ffffff",
 		"backgroundColor": "#F8F8F8"
 	},
+	"tabBar": {
+		"custom": true,
+		"color": "#94a3b8",
+		"selectedColor": "#f43f5e",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "white",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tab/home.png",
+				"selectedIconPath": "static/tab/home-active.png"
+			},
+			{
+				"pagePath": "pages/recommend/recommend",
+				"text": "点餐",
+				"iconPath": "static/tab/chat.png",
+				"selectedIconPath": "static/tab/chat-active.png"
+			},
+			{
+				"pagePath": "pages/history/history",
+				"text": "历史",
+				"iconPath": "static/tab/clock.png",
+				"selectedIconPath": "static/tab/clock-active.png"
+			},
+			{
+				"pagePath": "pages/profile/profile",
+				"text": "我的",
+				"iconPath": "static/tab/account.png",
+				"selectedIconPath": "static/tab/account-active.png"
+			}
+		]
+	},
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^(WeekCalendar|StatusCard|FoodSearchEntry|NutritionTip|DailyRecipeCard|WelcomeHeader|ActionGrid)$": "@/components/home/$1.vue",
+			"^(PageContainer|CustomTabBar)$": "@/components/common/$1.vue"
 		}
 	}
 }

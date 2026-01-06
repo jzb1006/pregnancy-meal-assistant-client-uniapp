@@ -24,10 +24,26 @@
          <view class="ai-spinner">
             <view class="ring"></view>
             <view class="ring"></view>
-            <view class="core"></view>
+            <view class="core">AI</view>
          </view>
-         <text class="loading-title">AI正在仔细查询...</text>
-         <text class="loading-tip">{{ tips[currentTipIndex] }}</text>
+         <text class="loading-title">AI 正在仔细查询...</text>
+         <view class="tips-carousel">
+            <swiper 
+                class="tips-swiper" 
+                vertical 
+                autoplay 
+                circular 
+                :interval="3000" 
+                :duration="500"
+                :disable-touch="true"
+            >
+                <swiper-item v-for="(tip, index) in tips" :key="index" class="swiper-item">
+                    <view class="tip-content">
+                        <text class="tip-text">{{ tip }}</text>
+                    </view>
+                </swiper-item>
+            </swiper>
+         </view>
       </view>
 
       <!-- Input View -->
@@ -81,7 +97,7 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
-import { checkFoodSafety } from '@/api/service';
+import { request } from '@/utils/request';
 import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
@@ -90,16 +106,14 @@ const showResultModal = ref(false);
 const searchText = ref('');
 const analyzing = ref(false);
 
-const tips = [
+const tips = ref([
   "正在查阅《孕期饮食指南》...",
   "不仅仅是能不能吃，还要看吃多少哦。",
   "营养均衡最重要，不要偏食哈。",
   "生冷食物要警惕，细菌寄生虫是大敌。",
   "含糖高的水果也要适量，小心妊娠糖尿病。",
   "正在咨询专业营养师的意见..."
-];
-const currentTipIndex = ref(0);
-let intervalId: number | null = null;
+]);
 
 const resultData = ref({
     levelClass: '',
@@ -121,7 +135,7 @@ const openModal = () => {
 const closeModal = () => {
     if (analyzing.value) return;
     showModal.value = false;
-    stopCarousel();
+    // stopCarousel(); // No longer needed as swiper handles autoplay
     setTimeout(() => { showResultModal.value = false; }, 300); // Reset after close
 }
 
@@ -129,19 +143,11 @@ const closeResult = () => {
     closeModal();
 }
 
-const startCarousel = () => {
-    currentTipIndex.value = 0;
-    intervalId = setInterval(() => {
-        currentTipIndex.value = (currentTipIndex.value + 1) % tips.length;
-    }, 2000);
-}
+// startCarousel function removed as swiper handles autoplay
 
 const stopCarousel = () => {
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-}
+    // No-op as swiper handles autoplay
+};
 
 onUnmounted(() => {
     stopCarousel();
@@ -151,16 +157,17 @@ const handleSearch = async () => {
     if (!searchText.value.trim()) return;
     
     analyzing.value = true;
-    startCarousel();
-    // uni.showLoading({ title: 'AI分析中...' }); // Removed native loading
+    // Carousel handled by swiper automatically
     
     // Minimum loading time 1.5s to show at least one tip
     const startTime = Date.now();
-    let fullText = '';
     
     try {
-        await checkFoodSafety(userStore.openId, searchText.value.trim(), (chunk) => {
-            fullText += chunk;
+        // Use normal request instead of stream for mini-program compatibility
+        const result: any = await request({
+            url: '/v1/food/check-json',
+            method: 'GET',
+            data: { openId: userStore.openId, query: searchText.value.trim() }
         });
         
         const elapsed = Date.now() - startTime;
@@ -168,42 +175,15 @@ const handleSearch = async () => {
             await new Promise(r => setTimeout(r, 1500 - elapsed));
         }
 
-        // Parse SSE
-        if (fullText.includes("data:")) {
-             // 1. Split by "data:" and newlines to get events
-             // Standard SSE format: data: val\n\n
-             // We want to reconstruct the full string payload
-             const events = fullText.split(/\n\n/);
-             let payload = '';
-             for (const event of events) {
-                 if (!event.trim()) continue;
-                 // Each event might have multiple lines starting with data:
-                 const lines = event.split(/\n/);
-                 const eventData = lines
-                    .filter(line => line.startsWith("data:"))
-                    .map(line => line.replace(/^data:\s*/, ''))
-                    .join('\n'); // Restore newlines within event
-                 payload += eventData;
-             }
-             fullText = payload;
+        // Parse result
+        let data = result;
+        if (result && result.code === 200 && result.data) {
+            data = result.data;
         }
-
-        // Parse JSON
-        // Robust regex to extract JSON object { ... } or list [ ... ]
-        const jsonMatch = fullText.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-        if (jsonMatch) {
-            fullText = jsonMatch[0];
-        } else if (fullText.includes("```")) {
-            // Fallback for markdown blocks
-            fullText = fullText.replace(/```json/g, "").replace(/```/g, "");
-        }
-        
-        console.log('FoodSafety Parsed JSON:', fullText);
-        const result = JSON.parse(fullText);
         
         // Check for backend error response
-        if (result.code && result.code !== 0 && result.code !== 200) {
-            throw new Error(result.message || 'Analysis Failed');
+        if (data.code && data.code !== 0 && data.code !== 200) {
+            throw new Error(data.message || 'Analysis Failed');
         }
 
         analyzing.value = false;
@@ -214,15 +194,15 @@ const handleSearch = async () => {
             'YELLOW': { title: '⚠️ 慎吃', class: 'level-yellow' },
             'RED': { title: '🚫 尽量不吃', class: 'level-red' }
         };
-        const style = styles[result.safety_level] || styles['YELLOW'];
+        const style = styles[data.safety_level] || styles['YELLOW'];
         
         resultData.value = {
             levelClass: style.class,
             title: style.title,
-            foodName: result.food_name || searchText.value,
-            conclusion: result.short_conclusion,
-            risk: result.risk_analysis,
-            amount: result.suggested_amount
+            foodName: data.food_name || searchText.value,
+            conclusion: data.short_conclusion,
+            risk: data.risk_analysis,
+            amount: data.suggested_amount
         };
         
         showResultModal.value = true; // Switch to result view
@@ -231,7 +211,7 @@ const handleSearch = async () => {
         analyzing.value = false;
         console.error('Search Error:', error);
         
-        let msg = '查询失败，请重试';
+        let msg = '查询失败,请重试';
         if (error.message) msg = error.message;
         if (error.data && error.data.message) msg = error.data.message;
         
@@ -249,10 +229,9 @@ const handleSearch = async () => {
 
 .food-safety-card {
     background: linear-gradient(135deg, #FFF0F1, #FFFFFF);
-    border: 1px solid #FFEBEB;
     border-radius: 20px;
     padding: 16px;
-    box-shadow: 0 4px 12px rgba(255, 143, 148, 0.1);
+    box-shadow: 0 4px 16px rgba(255, 143, 148, 0.15);
     transition: all 0.2s;
     
     &:active {
@@ -297,7 +276,7 @@ const handleSearch = async () => {
         display: flex;
         align-items: center;
         padding: 0 16px;
-        border: 1px solid #F0F0F0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         
         .search-icon {
             font-size: 16px;
@@ -329,33 +308,35 @@ const handleSearch = async () => {
 
 .modal-content {
     background: #fff;
-    width: 85%;
-    max-height: 80vh; // Limit height
-    display: flex;       // Enable flex layout
+    width: 75%;
+    max-width: 320px;
+    max-height: 80vh;
+    display: flex;
     flex-direction: column;
-    border-radius: 24px;
-    // padding: 24px; // Removed default padding here, handle in specific modals
+    border-radius: 20px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     animation: popIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    position: relative; // For positioning elements
+    position: relative;
 }
 
 .input-modal {
+    padding: 24px 20px 20px;
+    
     .modal-title {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 600;
         color: #333;
         display: block;
         text-align: center;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     
     .modal-subtitle {
-        font-size: 13px;
+        font-size: 11px;
         color: #999;
         display: block;
         text-align: center;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 }
 
@@ -364,63 +345,101 @@ const handleSearch = async () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 24px;
+    padding: 60px 0;
+    width: 100%;
     
     .ai-spinner {
         position: relative;
-        width: 80px;
-        height: 80px;
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 100px;
+        height: 100px;
+        margin-bottom: 32px;
         
         .ring {
             position: absolute;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-top-color: #FF8F94;
             width: 100%;
             height: 100%;
+            border: 4px solid transparent;
+            border-top-color: #f43f5e;
+            border-radius: 50%;
             animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.3));
             
             &:nth-child(2) {
                 width: 70%;
                 height: 70%;
-                border-top-color: #FFC0CB;
-                animation-direction: reverse;
-                animation-duration: 1.2s;
+                top: 15%;
+                left: 15%;
+                animation-delay: -0.5s;
+                border-top-color: #fda4af;
+                animation-duration: 2s;
+                border-width: 3px;
             }
         }
         
         .core {
-            width: 30%;
-            height: 30%;
-            background: #FF8F94;
-            border-radius: 50%;
-            animation: pulse 1s ease-in-out infinite alternate;
-            box-shadow: 0 0 20px rgba(255, 143, 148, 0.6);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: 800;
+            color: #f43f5e;
+            animation: pulse 2s ease-in-out infinite;
+            letter-spacing: 1px;
         }
     }
     
     .loading-title {
-        font-size: 18px;
-        color: #333;
-        font-weight: 600;
-        margin-bottom: 12px;
-        background: linear-gradient(90deg, #333, #666, #333);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shimmer 3s linear infinite;
+        font-size: 16px;
+        color: #334155;
+        font-weight: 700;
+        margin-bottom: 24px;
+        opacity: 0.9;
+        letter-spacing: 0.5px;
     }
     
-    .loading-tip {
-        font-size: 13px;
-        color: #999;
-        text-align: center;
-        line-height: 1.5;
-        height: 40px; 
+    .tips-carousel {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(254, 226, 226, 0.6);
+        border-radius: 20px;
+        padding: 0 12px;
+        width: 80%; /* Relative width */
+        max-width: 300px;
+        height: 50px;
+        margin: 0 auto; /* Ensure horizontal centering */
+        box-shadow: 0 8px 24px rgba(253, 164, 175, 0.15);
+        backdrop-filter: blur(5px);
+        overflow: hidden;
+
+        .tips-swiper {
+            width: 100%;
+            height: 100%;
+            
+            .swiper-item {
+                width: 100%;
+                height: 100%;
+                
+                .tip-content {
+                    width: 100%;
+                    height: 100%;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .tip-text {
+                    font-size: 14px;
+                    color: #64748b;
+                    line-height: 1.5;
+                    font-weight: 500;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
+                }
+            }
+        }
     }
 }
 
@@ -429,12 +448,8 @@ const handleSearch = async () => {
 }
 
 @keyframes pulse {
-    from { transform: scale(0.8); opacity: 0.8; }
-    to { transform: scale(1.1); opacity: 1; }
-}
-
-@keyframes shimmer {
-    to { background-position: 200% center; }
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
 }
 
 .result-modal {
@@ -455,41 +470,37 @@ const handleSearch = async () => {
         // Removed result-icon styles
 
         .result-food-name { 
-            font-size: 24px; 
-            color: #fff; // White text
+            font-size: 18px; 
+            color: #fff;
             font-weight: 700; 
             display: block; 
-            margin-bottom: 8px; 
-            letter-spacing: 1px;
+            margin-bottom: 6px; 
+            letter-spacing: 0.5px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .result-title { 
-            font-size: 32px; 
+            font-size: 24px; 
             font-weight: 800; 
-            letter-spacing: 2px;
-            color: #fff; // White text
+            letter-spacing: 1px;
+            color: #fff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.15);
-            
-            // Remove specific color overrides since we're using white on colored bg
         }
     }
     
     .result-body {
-        padding: 0 24px;
+        padding: 24px 20px;
         margin-bottom: 24px;
         overflow-y: auto; // Scrollable content
         -webkit-overflow-scrolling: touch;
         flex: 1; // Take remaining space
         
         .result-conclusion {
-            font-size: 16px;
-            color: #444;
-            font-weight: 500;
-            margin-bottom: 20px;
-            display: block;
+            font-size: 14px;
+            color: #333;
             line-height: 1.6;
-            text-align: justify;
+            margin-bottom: 16px;
+            text-align: left;
             background: #F9FAFC;
             padding: 16px;
             border-radius: 12px;
@@ -500,23 +511,20 @@ const handleSearch = async () => {
             background: #fff;
             padding: 16px;
             border-radius: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            border: 1px solid #F0F0F0;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
             
             .section-label {
                 font-size: 13px;
-                color: #888;
                 font-weight: 600;
+                color: #666;
                 display: block;
-                margin-bottom: 8px;
-                letter-spacing: 0.5px;
-                text-transform: uppercase;
+                margin-bottom: 6px;
             }
             .section-content {
-                font-size: 15px;
-                color: #333;
-                line-height: 1.5;
+                font-size: 13px;
+                color: #555;
+                line-height: 1.6;
             }
         }
     }
@@ -543,25 +551,24 @@ const handleSearch = async () => {
 }
 
 .input-wrapper {
-    background: #F5F7FA;
-    border-radius: 16px;
-    padding: 12px 16px;
-    margin-bottom: 24px;
-    border: 1px solid transparent;
-    transition: all 0.3s;
-    
-    &:focus-within {
-        background: #fff;
-        border-color: #FF8F94;
-        box-shadow: 0 0 0 4px rgba(255, 143, 148, 0.1);
-    }
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
     
     .custom-input {
-        font-size: 16px;
-        color: #333;
         width: 100%;
-        height: 24px;
-        line-height: 24px;
+        height: 42px;
+        background: #F8F8F8;
+        border-radius: 12px;
+        padding: 0 14px;
+        font-size: 14px;
+        color: #333;
+        border: none;
+        box-sizing: border-box;
+        
+        &::placeholder {
+            color: #BBB;
+        }
     }
 }
 

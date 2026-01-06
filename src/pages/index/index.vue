@@ -228,7 +228,7 @@ const navigateToProfile = () => {
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
     
     .card-header {
         margin-bottom: 16px;
@@ -305,12 +305,11 @@ const navigateToProfile = () => {
 }
 
 .encouragement-card {
-    background: #fff; // or use a soft color like #FFF9F9
+    background: #fff;
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 16px rgba(255, 182, 193, 0.15); // Soft pink shadow
-    border: 1px solid rgba(255, 230, 230, 0.5);
+    box-shadow: 0 4px 16px rgba(255, 182, 193, 0.2);
 
     .card-header {
         display: flex;

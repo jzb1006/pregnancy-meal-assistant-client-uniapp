@@ -54,13 +54,13 @@ const useFallback = () => {
 }
 
 .tip-content {
-  background: #FEF7EA; // Soft Orange/Yellow for tips
-  border: 1px solid #FDE6C8;
-  border-radius: 16px;
+  background: #FEF7EA;
+  border-radius: 20px;
   padding: 16px 20px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(253, 230, 200, 0.3);
 
   .tip-icon {
     font-size: 18px;

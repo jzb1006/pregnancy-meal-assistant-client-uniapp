@@ -208,9 +208,8 @@ watch(() => props.lmp, (val) => {
   border-radius: 24px;
   padding: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 10px 30px -10px rgba(253, 164, 175, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(253, 164, 175, 0.25);
   transition: all 0.3s ease;
-  border: 1px solid #fff5f7;
 
   &.expanded {
       padding-bottom: 10px;
@@ -270,7 +269,7 @@ watch(() => props.lmp, (val) => {
               border-radius: 10px;
               position: relative;
               transition: all 0.2s;
-              border: 1px solid transparent; // prevent layout shift
+              border: none;
 
               .week-day-name {
                   font-size: 10px;

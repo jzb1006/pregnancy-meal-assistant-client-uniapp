@@ -152,120 +152,13 @@ const tips = [
 const currentTipIndex = ref(0);
 let intervalId: number | null = null;
 
-const parseStreamResponse = (input: any): any => {
-    // 0. If already an object...
-    if (typeof input === 'object' && input !== null && !(input instanceof ArrayBuffer)) {
-        return input;
-    }
-    
-    if (!input) return {}; 
-
-    let cleanText = '';
-
-    // 1. Handle ArrayBuffer
-    if (input instanceof ArrayBuffer) {
-        try {
-            // @ts-ignore
-            if (typeof TextDecoder !== 'undefined') {
-                // @ts-ignore
-                const decoder = new TextDecoder('utf-8');
-                cleanText = decoder.decode(input);
-            } else {
-                // @ts-ignore
-                cleanText = String.fromCharCode.apply(null, new Uint8Array(input));
-                try { cleanText = decodeURIComponent(escape(cleanText)); } catch (e) {}
-            }
-        } catch (e) {
-            console.error("ArrayBuffer Decode Error", e);
-            throw new Error("响应解码失败");
-        }
-    } else {
-        cleanText = String(input).trim();
-    }
-
-    if (!cleanText) return {};
-
-    // 2. Handle SSE (data: prefix) - Accumulate ALL fragments
-    let combinedPayload = '';
-    
-    if (cleanText.includes("data:")) {
-        const events = cleanText.split(/\n\n+/); 
-        
-        for (const event of events) {
-            if (!event.trim()) continue;
-            
-            const lines = event.split('\n');
-            for (const line of lines) {
-                const trimmed = line.trim();
-                // Skip [DONE]
-                if (trimmed.includes('[DONE]')) continue;
-                
-                if (trimmed.startsWith('data:')) {
-                    combinedPayload += trimmed.replace(/^data:\s*/, '');
-                } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                     // Handle data without prefix
-                     combinedPayload += trimmed;
-                } else if (!trimmed.startsWith('event:') && !trimmed.startsWith('id:') && !trimmed.startsWith(':')) {
-                    // Try to catch raw lines that might be part of the content if split weirdly
-                    combinedPayload += trimmed;
-                }
-            }
-        }
-    } else {
-        // Not SSE, use raw text
-        combinedPayload = cleanText;
-    }
-    
-    // If we extracted something, use it; otherwise fallback to original
-    let textToParse = combinedPayload || cleanText;
-
-    // 3. Handle Markdown
-    const codeBlockMatch = textToParse.match(/```json\s*([\s\S]*?)\s*```/) || textToParse.match(/```\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch) {
-        textToParse = codeBlockMatch[1];
-    }
-
-    // 4. Extract JSON
-    const firstOpen = textToParse.search(/[\{\[]/);
-    const lastClose = Math.max(textToParse.lastIndexOf('}'), textToParse.lastIndexOf(']'));
-    
-    if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
-        textToParse = textToParse.substring(firstOpen, lastClose + 1);
-    }
-
-    // 5. Attempt Parse
-    try {
-        return JSON.parse(textToParse);
-    } catch (e) {
-        console.error("JSON Parse Error:", e, "Input Type:", typeof input, "Text:", textToParse.substring(0, 100));
-        throw new Error("解析响应失败 (Format Error)");
-    }
-};
 
 const loadDailyRecommendation = async () => {
   try {
-    let fullText = '';
-    const res: any = await getDailyRecommendation(userStore.openId, (chunk) => {
-        fullText += chunk;
-    });
+    const result: any = await getDailyRecommendation(userStore.openId);
     
-    if (!fullText && res && res.data) {
-        fullText = res.data; 
-    }
-
-    const result = parseStreamResponse(fullText);
-    
-    if (result.code && result.code !== 0 && result.code !== 200) {
-         throw new Error(result.message || 'Load Error');
-    }
-    
-    let rawData = result;
-    if (result.data && (result.code === 200 || result.code === 0)) {
-        rawData = result.data;
-    }
-
-    // Direct assignment as backend now matches MealVO structure
-    recipe.value = rawData as MealVO;
+    // Direct assignment as backend now returns MealVO structure
+    recipe.value = result as MealVO;
 
   } catch (e) {
     console.error('Load Error:', e);
@@ -303,29 +196,11 @@ const handleMore = async () => {
     startCarousel();
     
     const startTime = Date.now();
-    let fullText = '';
     
     try {
-        const res: any = await swapRecommendation(userStore.openId, (chunk) => {
-            fullText += chunk;
-        });
-
-        if (!fullText && res && res.data) {
-            fullText = res.data; 
-        }
-
-        const result = parseStreamResponse(fullText);
+        const result: any = await swapRecommendation(userStore.openId);
         
-        if (result.code && result.code !== 0 && result.code !== 200) {
-            throw new Error(result.message || 'Error');
-        }
-        
-        let rawData = result;
-        if (result.data && (result.code === 200 || result.code === 0)) {
-            rawData = result.data;
-        }
-        
-        recipe.value = rawData as MealVO;
+        recipe.value = result as MealVO;
         
         uni.showToast({ title: '已为您更换推荐', icon: 'success' });
     } catch (e: any) {
@@ -333,9 +208,6 @@ const handleMore = async () => {
         if (elapsed < 800) {
             await new Promise(r => setTimeout(r, 800 - elapsed));
         }
-        
-        // Try to parse error from gathered text if promise failed but some text came?
-        // Usually stream error throws.
         
         let msg = e.message || e.errMsg || '刷新失败';
         
@@ -345,7 +217,7 @@ const handleMore = async () => {
         }
         
         if (msg.includes('上限') || msg.includes('5次')) {
-             uni.showToast({ title: '每天只能换5次哦，明天再来试试吧！', icon: 'none', duration: 2000 });
+             uni.showToast({ title: '每天只能换5次哦,明天再来试试吧!', icon: 'none', duration: 2000 });
         } else {
              uni.showToast({ title: msg, icon: 'none' });
         }
@@ -566,8 +438,7 @@ const toggleExpand = () => {
         border-radius: 20px;
         padding: 24px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.03);
-        border: none;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         
         .section-title-row {
             display: flex;
@@ -580,7 +451,7 @@ const toggleExpand = () => {
 
     .reason-card {
         background: linear-gradient(135deg, #fff, #FFF0F1);
-        border: 1px solid #FFEBEB;
+        box-shadow: 0 2px 12px rgba(255, 143, 148, 0.1);
         .reason-text { font-size: 15px; color: #555; line-height: 1.7; letter-spacing: 0.5px; }
     }
 
@@ -616,7 +487,7 @@ const toggleExpand = () => {
 
     .task-card {
         background: #F0F7FF;
-        border: 1px dashed #B8D4FF;
+        box-shadow: 0 2px 12px rgba(184, 212, 255, 0.15);
         .task-text { font-size: 15px; color: #446688; line-height: 1.6; }
     }
 

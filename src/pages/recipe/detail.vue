@@ -144,7 +144,7 @@ const goBack = () => {
     right: 20px;
     
     .dish-name {
-        font-size: 28px;
+        font-size: 20px;
         font-weight: 700;
         color: #fff;
         display: block;
@@ -158,7 +158,7 @@ const goBack = () => {
         flex-wrap: wrap;
         
         .tag {
-            font-size: 12px;
+            font-size: 11px;
             color: #fff;
             background: rgba(255,255,255,0.2);
             backdrop-filter: blur(4px);
@@ -211,16 +211,16 @@ const goBack = () => {
         margin-bottom: 16px;
         
         .section-icon { font-size: 20px; margin-right: 8px; }
-        .section-title { font-size: 18px; font-weight: 600; color: #333; }
+        .section-title { font-size: 16px; font-weight: 600; color: #333; }
     }
 }
 
 .reason-card {
     background: linear-gradient(135deg, #fff, #FFF0F1);
-    border: 1px solid #FFEBEB;
+    box-shadow: 0 2px 12px rgba(255, 143, 148, 0.1);
     
     .reason-text {
-        font-size: 15px;
+        font-size: 14px;
         color: #555;
         line-height: 1.6;
     }
@@ -236,7 +236,7 @@ const goBack = () => {
         align-items: center;
         
         .bullet { color: #FF8F94; margin-right: 6px; font-size: 16px; }
-        .text { font-size: 15px; color: #444; }
+        .text { font-size: 14px; color: #444; }
     }
 }
 
@@ -255,7 +255,7 @@ const goBack = () => {
             border-radius: 50%;
             text-align: center;
             line-height: 24px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             margin-right: 12px;
             flex-shrink: 0;
@@ -263,7 +263,7 @@ const goBack = () => {
         }
         
         .step-text {
-            font-size: 15px;
+            font-size: 14px;
             color: #444;
             line-height: 1.6;
         }
@@ -272,10 +272,10 @@ const goBack = () => {
 
 .task-card {
     background: #F0F7FF;
-    border: 1px dashed #B8D4FF;
+    box-shadow: 0 2px 12px rgba(184, 212, 255, 0.15);
     
     .task-text {
-        font-size: 15px;
+        font-size: 14px;
         color: #446688;
         line-height: 1.6;
     }

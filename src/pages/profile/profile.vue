@@ -332,16 +332,16 @@ onMounted(() => {
             width: 30%;
             text-align: center;
             padding: 10px 0;
-            border: 1px solid #fee2e2;
-            border-radius: 8px;
-            font-size: 12px;
+            border-radius: 12px;
+            font-size: 11px;
             color: #64748b;
-            background: #fff;
+            background: #f8f9fc;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
             
             &.active {
                 background: #ffe4e6;
                 color: #f43f5e;
-                border-color: #f43f5e;
+                box-shadow: 0 2px 8px rgba(244, 63, 94, 0.15);
                 font-weight: bold;
             }
         }

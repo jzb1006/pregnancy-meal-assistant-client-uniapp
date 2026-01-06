@@ -42,10 +42,10 @@ onMounted(() => {
 const currentPath = computed(() => tabs[props.current].pagePath);
 
 const switchTab = (item: any) => {
-    // Since native tabBar is disabled, use reLaunch to simulate tab switch
     if (currentPath.value === item.pagePath) return;
     
-    uni.reLaunch({
+    // Use switchTab for smooth transition without page reload
+    uni.switchTab({
         url: '/' + item.pagePath
     });
 }
@@ -54,13 +54,13 @@ const switchTab = (item: any) => {
 <style lang="scss" scoped>
 .tab-bar-container {
     position: fixed;
-    bottom: 30px;
+    bottom: 0;
     left: 0;
     right: 0;
     z-index: 999;
     display: flex;
     justify-content: center;
-    pointer-events: none; // Allow clicks to pass through outside the panel
+    pointer-events: none;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -69,28 +69,30 @@ const switchTab = (item: any) => {
     pointer-events: auto;
     width: 90%;
     max-width: 380px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 24px;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 12px 16px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 32px 0 rgba(253, 164, 175, 0.15);
     
     .tab-item {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 4px;
+        padding: 6px;
+        min-height: 44px;
+        min-width: 44px;
         transition: all 0.3s ease;
         
         .tab-text {
             font-size: 10px;
-            margin-top: 4px;
+            margin-top: 2px;
             color: #94a3b8;
             font-weight: 500;
             

@@ -173,11 +173,10 @@ onPullDownRefresh(() => {
 
 .history-card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 16px;
     margin-bottom: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0,0,0,0.02);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 
     .card-header {
         display: flex;
@@ -186,7 +185,7 @@ onPullDownRefresh(() => {
         margin-bottom: 12px;
 
         .tag {
-            font-size: 12px;
+            font-size: 11px;
             padding: 4px 10px;
             border-radius: 6px;
             font-weight: 600;
@@ -197,7 +196,7 @@ onPullDownRefresh(() => {
         }
 
         .date {
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
         }
     }
@@ -205,14 +204,14 @@ onPullDownRefresh(() => {
     .card-body {
         margin-bottom: 16px;
         .dish-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #334155;
             display: block;
             margin-bottom: 6px;
         }
         .reason {
-            font-size: 14px;
+            font-size: 13px;
             color: #64748b;
             line-height: 1.5;
             display: -webkit-box;
@@ -232,15 +231,15 @@ onPullDownRefresh(() => {
         .action-btn {
             display: flex;
             align-items: center;
-            font-size: 12px;
+            font-size: 11px;
             padding: 6px 14px;
             border-radius: 20px;
-            border: 1px solid #e2e8f0;
             color: #64748b;
             background: #f8fafc;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
             transition: all 0.2s;
 
-            .icon { margin-right: 4px; font-size: 14px; }
+            .icon { margin-right: 4px; font-size: 13px; }
 
             &.active {
                 border-color: #fda4af;

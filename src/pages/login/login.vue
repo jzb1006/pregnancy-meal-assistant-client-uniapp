@@ -428,15 +428,15 @@ const handleRegister = async () => {
     }
 
     .title {
-        font-size: 28px;
-        font-weight: 800;
+        font-size: 20px;
+        font-weight: 700;
         color: #333;
         margin-bottom: 10px;
         letter-spacing: 1px;
     }
     .sub-title {
-        font-size: 16px;
-        color: #888;
+        font-size: 13px;
+        color: #fff;
         letter-spacing: 2px;
     }
 }
@@ -452,8 +452,7 @@ const handleRegister = async () => {
     backdrop-filter: blur(10px);
     border-radius: 24px;
     padding: 30px 25px;
-    box-shadow: 0 10px 40px rgba(244, 63, 94, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 40px rgba(244, 63, 94, 0.15);
 }
 
 .input-group {
@@ -463,7 +462,7 @@ const handleRegister = async () => {
 .toggle-link {
     margin-top: 20px;
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
     color: #666;
     
     .link {
@@ -486,7 +485,7 @@ const handleRegister = async () => {
 }
 
 .step-title {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: bold;
     color: #333;
     margin-bottom: 20px;
@@ -495,21 +494,19 @@ const handleRegister = async () => {
 
 .input-card {
     background: #f8fafc;
-    border-radius: 100px; /* Fully rounded/pill shape */
+    border-radius: 100px;
     padding: 2px 20px;
-    border: 1px solid #eef2f6;
     transition: all 0.3s;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     
     &:active, &:focus-within {
         background: #fff;
-        border-color: #f43f5e;
-        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
+        box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.1);
     }
 }
 
 .tip-text {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
     margin-top: 10px;
     text-align: center;
@@ -518,20 +515,20 @@ const handleRegister = async () => {
 .date-display {
     background: #fdf2f8;
     color: #f43f5e;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     padding: 15px;
-    border-radius: 12px;
+    border-radius: 16px;
     text-align: center;
     margin-bottom: 20px;
-    border: 1px dashed #fbcfe8;
+    box-shadow: 0 4px 12px rgba(251, 207, 232, 0.3);
 }
 
 .metric-input-group {
     margin-bottom: 25px;
     
     .label {
-        font-size: 14px;
+        font-size: 13px;
         color: #666;
         margin-bottom: 10px;
         font-weight: 500;
@@ -542,25 +539,25 @@ const handleRegister = async () => {
         align-items: center;
         justify-content: space-between;
         background: white;
-        border: 1px solid #dcdfe6; // Default border
-        border-radius: 100px; // Circle shape
+        border-radius: 100px;
         padding: 12px 15px;
         transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         
         &:active {
             background: #fdf2f8;
-            border-color: #f43f5e;
+            box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
         }
 
         .value-text {
-            font-size: 18px;
+            font-size: 16px;
             color: #333;
             font-weight: 500;
             flex: 1;
         }
         
         .unit-suffix {
-             font-size: 16px;
+             font-size: 13px;
              color: #999;
              margin-right: 10px;
         }

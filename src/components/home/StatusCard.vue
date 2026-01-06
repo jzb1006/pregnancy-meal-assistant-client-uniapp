@@ -61,16 +61,16 @@ const ringStyle = computed(() => {
 <style lang="scss" scoped>
 .status-card {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 24px;
   margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px -10px rgba(253, 164, 175, 0.25);
 
   .content {
-      flex: 1; // Take up remaining space
+      flex: 1;
       .header {
           margin-bottom: 8px;
           .title {
@@ -91,7 +91,7 @@ const ringStyle = computed(() => {
           }
           .label {
               font-size: 12px;
-              color: #10b981; // emerald
+              color: #10b981;
               line-height: 1.4;
           }
       }
@@ -108,7 +108,6 @@ const ringStyle = computed(() => {
           align-items: center;
           justify-content: center;
           
-          // Inner white circle to create ring effect
           &::after {
               content: '';
               position: absolute;
@@ -123,7 +122,7 @@ const ringStyle = computed(() => {
 
           .pct {
               position: relative;
-              z-index: 2; // Above the mask
+              z-index: 2;
               font-size: 14px;
               font-weight: 800;
               color: #f43f5e;
