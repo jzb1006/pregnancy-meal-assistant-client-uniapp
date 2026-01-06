@@ -5,8 +5,8 @@
       <text class="more" @click="handleMore">换一换 🔄</text>
     </view>
     
-    <!-- Collapsed Card State -->
-    <view class="recipe-card" @click="toggleExpand" v-if="!loading && recipe">
+    <!-- Recipe Card -->
+    <view class="recipe-card" @click="goToDetail" v-if="!loading && recipe">
       <view class="image-area">
         <text class="emoji-img">🍲</text>
       </view>
@@ -30,88 +30,6 @@
             </view>
         </view>
       </view>
-    </view>
-
-    <!-- Expanded Card State (Full Screen Popup) -->
-    <view class="popup-overlay" v-if="!loading && recipe && isExpanded">
-        <!-- Header Image Area -->
-        <view class="header-image">
-            <text class="emoji-img">🍲</text>
-            <view class="header-overlay"></view>
-            <view class="header-content">
-                <text class="dish-name">{{ recipe.dishName }}</text>
-                <view class="tags">
-                    <text class="tag" v-for="(tag, index) in recipe.tags" :key="index">{{ tag }}</text>
-                </view>
-            </view>
-        </view>
-
-        <view class="content-body">
-            <!-- Nutrition & Time -->
-            <view class="meta-row">
-                <view class="meta-item">
-                    <text class="meta-icon">🔥</text>
-                    <text class="meta-label">{{ recipe.nutrition ? recipe.nutrition.calories : 0 }} kcal</text>
-                </view>
-                <view class="meta-item">
-                    <text class="meta-icon">⏰</text>
-                    <text class="meta-label">{{ recipe.cookTime }}</text>
-                </view>
-                <view class="meta-item">
-                    <text class="meta-icon">💪</text>
-                    <text class="meta-label">难度：适中</text>
-                </view>
-            </view>
-            
-            <!-- Reason -->
-            <view class="section-card reason-card">
-                <view class="section-title-row">
-                    <text class="section-icon">💡</text>
-                    <text class="section-title">推荐理由</text>
-                </view>
-                <text class="reason-text">{{ recipe.reason }}</text>
-            </view>
-
-            <!-- Ingredients -->
-            <view class="section-card">
-                <view class="section-title-row">
-                    <text class="section-icon">🥦</text>
-                    <text class="section-title">所需食材</text>
-                </view>
-                <view class="ingredients-grid">
-                    <view class="ingredient-item" v-for="(item, index) in recipe.ingredients" :key="index">
-                        <text class="bullet">•</text>
-                        <text class="text">{{ item }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- Steps -->
-            <view class="section-card">
-                <view class="section-title-row">
-                    <text class="section-icon">👨‍🍳</text>
-                    <text class="section-title">烹饪步骤</text>
-                </view>
-                <view class="steps-list">
-                    <view class="step-item" v-for="(step, index) in recipe.steps" :key="index">
-                        <view class="step-num">{{ index + 1 }}</view>
-                        <text class="step-text">{{ step }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- Husband Task -->
-            <view class="section-card task-card" v-if="recipe.husbandTask">
-                <view class="section-title-row">
-                    <text class="section-icon">🦸‍♂️</text>
-                    <text class="section-title">准爸爸任务</text>
-                </view>
-                <text class="task-text">{{ recipe.husbandTask }}</text>
-            </view>
-
-            <!-- Collapse Button -->
-            <button class="btn-block" @click.stop="toggleExpand">我学会了 😤</button>
-        </view>
     </view>
     
     <!-- Loading States -->
@@ -139,7 +57,6 @@ import { useUserStore } from '@/stores/user';
 const userStore = useUserStore();
 const recipe = ref<MealVO | null>(null);
 const loading = ref(false);
-const isExpanded = ref(false); // State to toggle expanded view
 
 const tips = [
   "孕期饮食小贴士：少食多餐，减轻肠胃负担。",
@@ -224,26 +141,22 @@ const handleMore = async () => {
     } finally {
         stopCarousel();
         loading.value = false;
-        isExpanded.value = false; // Collapse on swap
     }
 }
 
-const toggleExpand = () => {
-    if (loading.value) return;
+const goToDetail = () => {
+    if (loading.value || !recipe.value) return;
     
-    isExpanded.value = !isExpanded.value;
+    // Store data to local storage for the detail page to pick up
+    uni.setStorageSync('CURRENT_RECIPE_DETAIL', recipe.value);
     
-    if (isExpanded.value) {
-        // uni.hideTabBar(); // Removed as per user request
-    } else {
-        // uni.showTabBar(); // Removed as per user request
-    }
+    uni.navigateTo({
+        url: '/pages/recipe/detail'
+    });
 }
 </script>
 
 <style lang="scss" scoped>
-/* Scoped styles ... */
-
 .daily-recipe-container {
   margin-bottom: 24px;
 }
@@ -341,178 +254,5 @@ const toggleExpand = () => {
         }
     }
   }
-}
-
-/* FULL SCREEN POPUP OVERLAY */
-.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 10000;
-    background: #F8F9FC;
-    overflow-y: scroll; /* Force scroll behavior */
-    -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
-    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Smoother spring-like curve */
-    
-    .header-image {
-      height: 280px; /* Slightly taller for impact */
-      background-color: #FFF5F5;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      .emoji-img { font-size: 100px; }
-      
-      .header-overlay {
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 120px;
-        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-      }
-      
-      .header-content {
-        position: absolute;
-        bottom: 24px;
-        left: 20px;
-        right: 20px;
-        
-        .dish-name {
-            font-size: 30px;
-            font-weight: 700;
-            color: #fff;
-            display: block;
-            margin-bottom: 10px;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        .tags {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            .tag {
-                font-size: 12px;
-                color: #fff;
-                background: rgba(255,255,255,0.25);
-                backdrop-filter: blur(8px);
-                padding: 4px 12px;
-                border-radius: 14px;
-            }
-        }
-      }
-    }
-
-    .content-body {
-        padding: 24px;
-        margin-top: -24px;
-        position: relative;
-        border-radius: 24px 24px 0 0;
-        background: #F8F9FC;
-        /* Ensure enough space for the button and safe area */
-        padding-bottom: calc(100px + env(safe-area-inset-bottom));
-    }
-
-    .meta-row {
-        display: flex;
-        justify-content: space-around;
-        background: #fff;
-        padding: 16px;
-        border-radius: 20px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-        
-        .meta-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            .meta-icon { font-size: 22px; }
-            .meta-label { font-size: 13px; color: #555; font-weight: 600; }
-        }
-    }
-
-    .section-card {
-        background: #fff;
-        border-radius: 20px;
-        padding: 24px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-        
-        .section-title-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-            .section-icon { font-size: 22px; margin-right: 10px; }
-            .section-title { font-size: 18px; font-weight: 700; color: #333; }
-        }
-    }
-
-    .reason-card {
-        background: linear-gradient(135deg, #fff, #FFF0F1);
-        box-shadow: 0 2px 12px rgba(255, 143, 148, 0.1);
-        .reason-text { font-size: 15px; color: #555; line-height: 1.7; letter-spacing: 0.5px; }
-    }
-
-    .ingredients-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        .ingredient-item {
-            display: flex;
-            align-items: flex-start;
-            .bullet { color: #FF8F94; margin-right: 8px; font-size: 16px; line-height: 1.4; }
-            .text { font-size: 15px; color: #444; line-height: 1.4; }
-        }
-    }
-
-    .steps-list {
-        .step-item {
-            display: flex;
-            margin-bottom: 24px;
-            &:last-child { margin-bottom: 0; }
-            .step-num {
-                width: 26px; height: 26px;
-                background: #333; color: #fff;
-                border-radius: 50%;
-                text-align: center; line-height: 26px;
-                font-size: 14px; font-weight: 600;
-                margin-right: 14px; flex-shrink: 0; margin-top: 2px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            }
-            .step-text { font-size: 15px; color: #444; line-height: 1.7; }
-        }
-    }
-
-    .task-card {
-        background: #F0F7FF;
-        box-shadow: 0 2px 12px rgba(184, 212, 255, 0.15);
-        .task-text { font-size: 15px; color: #446688; line-height: 1.6; }
-    }
-
-    .btn-block {
-        background: #222;
-        color: #fff;
-        height: 56px;
-        line-height: 56px;
-        border-radius: 28px;
-        font-size: 18px;
-        font-weight: 600;
-        width: 100%;
-        margin-top: 30px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        &::after { border: none; }
-        transition: transform 0.2s;
-        
-        &:active {
-            transform: scale(0.96);
-        }
-    }
-}
-
-@keyframes slideUp {
-    from { transform: translateY(100vh); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
 }
 </style>
