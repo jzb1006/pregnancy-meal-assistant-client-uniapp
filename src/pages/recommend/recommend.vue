@@ -43,8 +43,32 @@
                         v-if="generating || !resultData" 
                         class="streaming-text"
                     >
-                        <u-loading-icon v-if="generating" mode="semicircle" color="#f43f5e" size="24"></u-loading-icon>
-                        <text class="text">{{ content }}</text>
+                        <view v-if="generating" class="loading-container">
+                            <view class="ai-spinner">
+                                <view class="ring"></view>
+                                <view class="ring"></view>
+                                <view class="core">AI</view>
+                            </view>
+                            <text class="loading-title">AI 正在精心为您定制...</text>
+                            <view class="tips-carousel">
+                                <swiper 
+                                    class="tips-swiper" 
+                                    vertical 
+                                    autoplay 
+                                    circular 
+                                    :interval="3000" 
+                                    :duration="500"
+                                    :disable-touch="true"
+                                >
+                                    <swiper-item v-for="(tip, index) in pregnancyTips" :key="index" class="swiper-item">
+                                        <view class="tip-content">
+                                            <text class="tip-text">{{ tip }}</text>
+                                        </view>
+                                    </swiper-item>
+                                </swiper>
+                            </view>
+                        </view>
+                        <text v-else class="text">{{ content }}</text>
                         <!-- Anchor for scrolling -->
                         <view style="height: 10px; width: 100%"></view> 
                     </scroll-view>
@@ -128,7 +152,8 @@ const content = ref('');
 const resultData = ref<any>(null);
 const feedback = ref<string | null>(null);
 const scrollTop = ref(0);
-let eventSource: EventSource | null = null;
+const currentTipIndex = ref(0);
+let tipInterval: any = null;
 
 const mealTypes = [
     { label: '早餐', value: 'BREAKFAST', emoji: '🍳' },
@@ -136,64 +161,51 @@ const mealTypes = [
     { label: '晚餐', value: 'DINNER', emoji: '🥘' },
 ];
 
-const startRecommend = () => {
+const pregnancyTips = [
+    '💡 孕期饮食要注意营养均衡哦',
+    '🥛 每天保证充足的钙质摄入',
+    '🍊 适量补充维生素C有助于铁吸收', 
+    '🐟 深海鱼富含DHA，促进宝宝大脑发育',
+    '🥬 多吃绿叶蔬菜，补充叶酸',
+    '💧 每天饮水1500-2000ml',
+    '🍎 少食多餐，避免暴饮暴食',
+    '🧂 控制盐分摄入，预防水肿',
+];
+
+const startRecommend = async () => {
     if (!userStore.openId) {
         uni.showToast({ title: '请先登录', icon: 'none' });
         return;
     }
     
     // Reset
-    if (eventSource) eventSource.close();
     generating.value = true;
-    content.value = '正在连接 AI 大脑...';
+    content.value = '正在连接 AI...';
     resultData.value = null;
     feedback.value = null;
-
-    // SSE Connection (H5 Compatible)
-    // NOTE: For Mini Program, need to implement manual chunk reading via uni.request({ enableChunked: true })
-    const url = `http://192.168.4.85:8080/api/v1/meal/recommend/stream?openId=${userStore.openId}&mealType=${currentType.value}`;
     
-    // Check if EventSource is supported (H5 / App-Webview)
-    if (typeof EventSource !== 'undefined') {
-        eventSource = new EventSource(url);
+    try {
+        // Use normal request instead of SSE for mini-program compatibility
+        const result: any = await request({
+            url: '/v1/meal/recommend',
+            method: 'GET',
+            data: { openId: userStore.openId, mealType: currentType.value }
+        });
         
-        eventSource.addEventListener('start', (e: any) => {
-            console.log('SSE Start');
-            content.value = ''; // Clear initial message
-            scrollTop.value = 0;
-        });
-
-        eventSource.addEventListener('chunk', (e: any) => {
-            content.value += e.data;
-            // Force scroll to bottom with nextTick to ensure render is updated
-            nextTick(() => {
-                 scrollTop.value = 99999 + Math.random(); 
-            });
-        });
-
-        eventSource.addEventListener('complete', (e: any) => {
-            try {
-                const json = JSON.parse(e.data);
-                resultData.value = json;
-            } catch (err) {
-                console.error('Parse Error', err);
-            }
-            generating.value = false;
-            eventSource?.close();
-        });
-
-        eventSource.onerror = (err) => {
-            console.error('SSE Error', err);
-            if (eventSource?.readyState === EventSource.CLOSED) {
-                generating.value = false;
-            } else {
-                eventSource?.close();
-                generating.value = false;
-            }
-        };
-    } else {
-        // Fallback for non-SSE environments (Basic Request)
-        uni.showToast({ title: '当前环境不支持流式传输', icon: 'none' });
+        // Parse result
+        if (result && result.code === 200 && result.data) {
+            resultData.value = result.data;
+        } else if (typeof result === 'object' && result.dishName) {
+            // Direct MealVO object
+            resultData.value = result;
+        } else {
+            throw new Error('Invalid response');
+        }
+        
+    } catch (e: any) {
+        console.error('Recommend Error:', e);
+        uni.showToast({ title: e.message || '推荐失败', icon: 'none' });
+    } finally {
         generating.value = false;
     }
 }
@@ -219,9 +231,6 @@ const handleFeedback = async (action: 'LIKE' | 'DISLIKE') => {
     }
 }
 
-onUnmounted(() => {
-    if (eventSource) eventSource.close();
-});
 </script>
 
 <style lang="scss" scoped>
@@ -236,7 +245,7 @@ onUnmounted(() => {
     background: #fff;
     padding: 6px;
     border-radius: 100px;
-    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     margin-bottom: 40px;
     
     .meal-opt {
@@ -249,7 +258,7 @@ onUnmounted(() => {
         transition: all 0.3s;
         
         .emoji { margin-right: 6px; font-size: 16px; }
-        .label { font-size: 14px; color: #64748b; font-weight: 600; }
+        .label { font-size: 13px; color: #64748b; font-weight: 600; }
         
         &.active {
             background: #fff1f2;
@@ -263,24 +272,25 @@ onUnmounted(() => {
 }
 
 .result-card {
-    background: rgba(255, 255, 255, 0.85); // Transparent for glass effect
-    backdrop-filter: blur(12px);          // Blur effect
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
     border-radius: 24px;
     padding: 24px;
     min-height: 200px;
     box-shadow: 0 10px 40px -10px rgba(253, 164, 175, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.6);
     transition: all 0.3s ease;
     
     .streaming-text {
-        font-size: 16px;
+        font-size: 14px;
         color: #334155;
         line-height: 1.8;
         white-space: pre-wrap;
-        max-height: 50vh;
-        overflow-y: auto;
+        word-wrap: break-word;
+        height: auto;
+        max-height: 60vh;
         width: 100%;
-        width: 100%;
+        box-sizing: border-box; 
+        padding: 16px;
         // animation handled by Transition component
         
         .text { 
@@ -302,35 +312,35 @@ onUnmounted(() => {
         animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1); // Smooth entrance
         
         .header {
-            .title { font-size: 24px; font-weight: 800; color: #1e293b; display: block; margin-bottom: 12px; }
+            .title { font-size: 18px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 8px; letter-spacing: 0.5px; }
             .tags {
                 display: flex;
                 gap: 8px;
-                margin-bottom: 24px;
+                margin-bottom: 16px;
                 .tag {
                     font-size: 11px;
-                    padding: 4px 12px;
+                    padding: 3px 10px;
                     background: #f1f5f9;
                     color: #64748b;
                     border-radius: 100px;
-                    font-weight: 600;
+                    
                     &.warning { background: #fff7ed; color: #ea580c; }
                 }
             }
         }
         
         .section {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             .sec-title {
-                font-size: 14px;
-                font-weight: 700;
+                font-size: 13px;
+                font-weight: 600;
                 color: #94a3b8;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
                 display: block;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
-            .sec-body { font-size: 15px; color: #334155; line-height: 1.7; }
+            .sec-body { font-size: 13px; color: #334155; line-height: 1.6; }
             
             .ing-list {
                 display: flex;
@@ -338,34 +348,35 @@ onUnmounted(() => {
                 gap: 8px;
                 .ing-item {
                     font-size: 13px;
-                    padding: 8px 14px;
+                    padding: 6px 12px;
                     background: rgba(248, 250, 252, 0.8);
-                    border: 1px solid #e2e8f0;
-                    border-radius: 10px; // Softer corners
+                    border-radius: 10px;
                     color: #475569;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
                 }
             }
             
             .step-list {
                 .step-item {
                     display: flex;
-                    margin-bottom: 16px;
-                    .idx {
-                        width: 26px;
-                        height: 26px;
-                        background: #ffe4e6;
-                        color: #f43f5e;
-                        font-size: 13px;
-                        font-weight: bold;
-                        border-radius: 50%;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        margin-right: 14px;
+                    margin-bottom: 12px;
+                    
+                    .idx { 
+                        width: 20px; 
+                        height: 20px; 
+                        background: #ffe4e6; 
+                        color: #f43f5e; 
+                        font-size: 12px; 
+                        font-weight: bold; 
+                        border-radius: 50%; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        margin-right: 10px; 
                         flex-shrink: 0;
                         box-shadow: 0 2px 6px rgba(244, 63, 94, 0.2);
                     }
-                    .desc { font-size: 15px; color: #334155; line-height: 1.6; flex: 1; }
+                    .desc { font-size: 13px; color: #334155; line-height: 1.6; flex: 1; }
                 }
             }
         }
@@ -380,18 +391,18 @@ onUnmounted(() => {
         }
         
         .husband-task {
-            background: rgba(239, 246, 255, 0.7); // Slightly transparent
-            border: 1px solid #dbeafe;
+            background: rgba(239, 246, 255, 0.7);
             border-radius: 16px;
             padding: 16px;
             margin-top: 24px;
             display: flex;
             align-items: flex-start;
             backdrop-filter: blur(5px);
+            box-shadow: 0 2px 10px rgba(219, 234, 254, 0.3);
             
             .icon { font-size: 20px; margin-right: 10px; }
-            .label { font-size: 14px; font-weight: bold; color: #1d4ed8; margin-right: 4px; white-space: nowrap; margin-top: 2px; }
-            .task-desc { font-size: 14px; color: #1e3a8a; line-height: 1.6; margin-top: 2px; }
+            .label { font-size: 13px; font-weight: bold; color: #1d4ed8; margin-right: 4px; white-space: nowrap; margin-top: 2px; }
+            .task-desc { font-size: 13px; color: #1e3a8a; line-height: 1.6; margin-top: 2px; }
         }
     }
 }
@@ -405,11 +416,128 @@ onUnmounted(() => {
 @keyframes slideUpFade {
     from {
         opacity: 0;
-        transform: translateY(20px) scale(0.98);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0; /* Remove horizontal padding here */
+    width: 100%;
+    
+    .ai-spinner {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        margin-bottom: 32px;
+        
+        .ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top-color: #f43f5e;
+            border-radius: 50%;
+            animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.3));
+            
+            &:nth-child(2) {
+                width: 70%;
+                height: 70%;
+                top: 15%;
+                left: 15%;
+                animation-delay: -0.5s;
+                border-top-color: #fda4af;
+                animation-duration: 2s;
+                border-width: 3px;
+            }
+        }
+        
+        .core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: 800;
+            color: #f43f5e;
+            animation: pulse 2s ease-in-out infinite;
+            letter-spacing: 1px;
+        }
+    }
+    
+    .loading-title {
+        font-size: 16px;
+        color: #334155;
+        font-weight: 700;
+        margin-bottom: 24px;
+        opacity: 0.9;
+        letter-spacing: 0.5px;
+    }
+    
+    .tips-carousel {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(254, 226, 226, 0.6);
+        border-radius: 20px;
+        padding: 0 12px;
+        width: 80%; /* Relative width */
+        max-width: 300px;
+        height: 50px;
+        margin: 0 auto; /* Ensure horizontal centering */
+        box-shadow: 0 8px 24px rgba(253, 164, 175, 0.15);
+        backdrop-filter: blur(5px);
+        overflow: hidden;
+
+        .tips-swiper {
+            width: 100%;
+            height: 100%;
+            
+            .swiper-item {
+                width: 100%;
+                height: 100%;
+                
+                .tip-content {
+                    width: 100%;
+                    height: 100%;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .tip-text {
+                    font-size: 14px;
+                    color: #64748b;
+                    line-height: 1.5;
+                    font-weight: 500;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
+                }
+            }
+        }
     }
 }
 
