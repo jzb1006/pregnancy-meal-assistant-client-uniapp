@@ -60,20 +60,22 @@
                 
                 <view class="card-footer">
                     <view 
-                        class="action-btn" 
-                        :class="{ active: item.feedbackAction === 'DISLIKE' }"
+                        class="action-btn-wrapper"
                         @click.stop="handleFeedback(item, 'DISLIKE')"
                     >
-                        <text class="icon">👎</text>
-                        <text>{{ item.feedbackAction === 'DISLIKE' ? '已不感兴趣' : '不感兴趣' }}</text>
+                        <view class="action-btn dislike" :class="{ active: item.feedbackAction === 'DISLIKE' }">
+                            <text class="icon" :class="{ 'anim-shake': item.feedbackAction === 'DISLIKE' }">👎</text>
+                            <text class="label">{{ item.feedbackAction === 'DISLIKE' ? '已不感兴趣' : '不感兴趣' }}</text>
+                        </view>
                     </view>
                     <view 
-                        class="action-btn" 
-                        :class="{ active: item.feedbackAction === 'LIKE' }"
+                        class="action-btn-wrapper"
                         @click.stop="handleFeedback(item, 'LIKE')"
                     >
-                        <text class="icon">❤️</text>
-                        <text>{{ item.feedbackAction === 'LIKE' ? '已收藏' : '收藏' }}</text>
+                        <view class="action-btn like" :class="{ active: item.feedbackAction === 'LIKE' }">
+                            <text class="icon" :class="{ 'anim-pop': item.feedbackAction === 'LIKE' }">❤️</text>
+                            <text class="label">{{ item.feedbackAction === 'LIKE' ? '已收藏' : '收藏' }}</text>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -314,7 +316,24 @@ const handleFeedback = async (item: any, action: 'LIKE' | 'DISLIKE') => {
 }
 
 onShow(() => {
-    fetchData();
+    // Check for pending filter from Profile page
+    const pendingFilter = uni.getStorageSync('HISTORY_FILTER_PENDING');
+    if (pendingFilter) {
+        if (pendingFilter.feedback) {
+            feedbackFilter.value = pendingFilter.feedback;
+        }
+        // Clear it after using
+        uni.removeStorageSync('HISTORY_FILTER_PENDING');
+        
+        // Reset page and fetch
+        currentPage.value = 1;
+        fetchData();
+    } else {
+        // Normal load (or if we want to refresh every time)
+        // If we want to persist state when switching tabs normally, we might check if list is empty
+        // But requested behavior implies fresh load or update
+        fetchData();
+    }
 });
 
 onPullDownRefresh(() => {
@@ -333,35 +352,37 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .content-container {
-    padding: 15px;
+    padding: 10px;
     padding-bottom: 100px;
 }
 
 .history-card {
     background: #fff;
-    border-radius: 20px;
-    padding: 16px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border-radius: 24px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid rgba(255, 255, 255, 0.8);
 
     &:active {
         transform: scale(0.98);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 5px 20px -5px rgba(0, 0, 0, 0.08);
     }
 
     .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
 
         .tag {
             font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 6px;
+            padding: 6px 14px;
+            border-radius: 100px;
             font-weight: 600;
+            letter-spacing: 0.5px;
 
             &.breakfast { background: #fff7ed; color: #f97316; }
             &.lunch { background: #f0fdf4; color: #22c55e; }
@@ -369,62 +390,134 @@ onReachBottom(() => {
         }
 
         .date {
-            font-size: 11px;
+            font-size: 12px;
             color: #94a3b8;
+            font-weight: 500;
         }
     }
 
     .card-body {
-        margin-bottom: 16px;
+        margin-bottom: 20px;
         .dish-name {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 18px;
+            font-weight: 700;
             color: #334155;
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
         .reason {
-            font-size: 13px;
+            font-size: 14px;
             color: #64748b;
-            line-height: 1.5;
+            line-height: 1.6;
             display: -webkit-box;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
             overflow: hidden;
+            font-weight: 400;
         }
     }
 
     .card-footer {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        border-top: 1px solid #f1f5f9;
-        padding-top: 12px;
+        border-top: 1px solid #f8fafc;
+        padding-top: 16px;
         gap: 12px;
+
+        .action-btn-wrapper {
+            position: relative;
+        }
 
         .action-btn {
             display: flex;
             align-items: center;
-            font-size: 11px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            color: #64748b;
+            justify-content: center;
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 18px;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             background: #f8fafc;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            transition: all 0.2s;
+            color: #94a3b8;
+            border: 1px solid transparent;
 
-            .icon { margin-right: 4px; font-size: 13px; }
-
-            &.active {
-                border-color: #fda4af;
-                background: #fff1f2;
-                color: #e11d48;
+            .icon {
+                font-size: 14px;
+                margin-right: 6px;
+                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                display: inline-block;
             }
 
-            &:active {
-                opacity: 0.8;
-                transform: scale(0.98);
+            .label {
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+            }
+
+            // Button Types
+            &.like {
+                &:active {
+                    transform: scale(0.92);
+                }
+
+                &.active {
+                    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+                    color: #e11d48;
+                    box-shadow: 0 8px 20px -6px rgba(255, 154, 158, 0.5);
+                    border: 1px solid rgba(255, 255, 255, 0.4);
+
+                    .icon {
+                        color: #e11d48;
+                    }
+
+                    .label {
+                        color: #be123c;
+                    }
+                }
+            }
+
+            &.dislike {
+                &:active {
+                    transform: scale(0.92);
+                }
+
+                &.active {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #cbd5e1;
+                    
+                    .icon {
+                        filter: grayscale(1);
+                        opacity: 0.8;
+                    }
+                }
             }
         }
     }
+}
+
+// Animations
+@keyframes pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.4); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    50% { transform: rotate(15deg); }
+    75% { transform: rotate(-8deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.anim-pop {
+    animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.anim-shake {
+    animation: shake 0.5s ease-in-out forwards;
 }
 </style>
