@@ -25,3 +25,6 @@ dist
 
 # WeChat Mini Program
 project.private.config.json
+
+# Claude 开发文档
+.claude/
