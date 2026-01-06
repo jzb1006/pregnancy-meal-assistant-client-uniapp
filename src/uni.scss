@@ -12,67 +12,116 @@
  * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
  */
 
-/* 颜色变量 */
+/* ============================================
+   孕期助手 - 全局样式变量
+   设计主题: 温柔孕妈风
+   ============================================ */
 
-/* 行为相关颜色 */
-$uni-color-primary: #007aff;
-$uni-color-success: #4cd964;
-$uni-color-warning: #f0ad4e;
-$uni-color-error: #dd524d;
+/* 颜色变量 - 温柔粉色系 */
 
-/* 文字基本颜色 */
-$uni-text-color: #333; // 基本色
+/* 主色调 */
+$uni-color-primary: #f43f5e; // 玫瑰粉 - 主要品牌色
+$uni-color-primary-light: #fda4af; // 浅玫瑰粉
+$uni-color-primary-lighter: #fecdd3; // 更浅的粉色
+$uni-color-primary-dark: #e11d48; // 深玫瑰粉
+
+/* 渐变色 */
+$uni-gradient-primary: linear-gradient(135deg, #fda4af 0%, #f43f5e 100%);
+$uni-gradient-soft: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+
+/* 语义化颜色 */
+$uni-color-success: #10b981; // 翡翠绿
+$uni-color-warning: #f59e0b; // 琥珀色
+$uni-color-error: #ef4444; // 红色
+$uni-color-info: #3b82f6; // 蓝色
+
+/* 文字颜色 */
+$uni-text-color: #333; // 主文字色
+$uni-text-color-secondary: #666; // 次要文字
+$uni-text-color-grey: #999; // 辅助灰色
+$uni-text-color-light: #c0c4cc; // 浅灰色
 $uni-text-color-inverse: #fff; // 反色
-$uni-text-color-grey: #999; // 辅助灰色，如加载更多的提示信息
-$uni-text-color-placeholder: #808080;
+$uni-text-color-placeholder: #a8abb2;
 $uni-text-color-disable: #c0c0c0;
 
-/* 背景颜色 */
-$uni-bg-color: #fff;
-$uni-bg-color-grey: #f8f8f8;
-$uni-bg-color-hover: #f1f1f1; // 点击状态颜色
-$uni-bg-color-mask: rgba(0, 0, 0, 0.4); // 遮罩颜色
+/* ==================== 微信官方标准字号（调整后） ==================== */
+// 参考：https://developers.weixin.qq.com/miniprogram/design/
+// 根据实际显示效果适当调整
+$uni-font-size-title: 20px; // 页面主标题（原22pt）
+$uni-font-size-subtitle: 16px; // 卡片标题、次级标题（原17pt）
+$uni-font-size-body: 14px; // 正文内容（原15pt）
+$uni-font-size-caption: 13px; // 辅助说明文字（原14pt）
+$uni-font-size-mini: 11px; // 最小字号（原12pt）
 
-/* 边框颜色 */
-$uni-border-color: #c8c7cc;
-
-/* 尺寸变量 */
-
+/* ==================== 其他字体变量 ==================== */
 /* 文字尺寸 */
+$uni-font-size-xs: 11px;
 $uni-font-size-sm: 12px;
 $uni-font-size-base: 14px;
-$uni-font-size-lg: 16;
+$uni-font-size-lg: 16px;
+$uni-font-size-xl: 18px;
+
+/* 背景颜色 - 柔和中性 */
+$uni-bg-color: #ffffff; // 主背景
+$uni-bg-color-page: #f8f9fc; // 页面背景（更柔和）
+$uni-bg-color-grey: #f8f9fc; // 灰色背景
+$uni-bg-color-hover: #fef2f2; // 点击状态（粉色调）
+$uni-bg-color-mask: rgba(0, 0, 0, 0.4); // 遮罩
+
+/* 边框颜色 - 默认透明，使用阴影代替 */
+$uni-border-color: transparent;
+$uni-border-color-light: rgba(0, 0, 0, 0.06);
+
+/* 圆角系统 - 统一且柔和 */
+$uni-border-radius-sm: 12px;
+$uni-border-radius-base: 16px;
+$uni-border-radius-lg: 20px;
+$uni-border-radius-xl: 24px;
+$uni-border-radius-circle: 50%;
+
+/* 阴影系统 - 柔和层次感 */
+$uni-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+$uni-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.06);
+$uni-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+$uni-shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.1);
+$uni-shadow-colored: 0 10px 30px -10px rgba(253, 164, 175, 0.25); // 粉色投影
+$uni-shadow-colored-lg: 0 4px 16px rgba(255, 182, 193, 0.2);
+
+/* 尺寸变量 */
 
 /* 图片尺寸 */
 $uni-img-size-sm: 20px;
 $uni-img-size-base: 26px;
 $uni-img-size-lg: 40px;
 
-/* Border Radius */
-$uni-border-radius-sm: 2px;
-$uni-border-radius-base: 3px;
-$uni-border-radius-lg: 6px;
-$uni-border-radius-circle: 50%;
+/* 间距系统 - 8px基准 */
+$uni-spacing-xs: 4px;
+$uni-spacing-sm: 8px;
+$uni-spacing-base: 12px;
+$uni-spacing-md: 16px;
+$uni-spacing-lg: 20px;
+$uni-spacing-xl: 24px;
+$uni-spacing-2xl: 32px;
 
-/* 水平间距 */
-$uni-spacing-row-sm: 5px;
-$uni-spacing-row-base: 10px;
-$uni-spacing-row-lg: 15px;
+/* 水平间距（兼容旧变量） */
+$uni-spacing-row-sm: 8px;
+$uni-spacing-row-base: 12px;
+$uni-spacing-row-lg: 16px;
 
-/* 垂直间距 */
-$uni-spacing-col-sm: 4px;
-$uni-spacing-col-base: 8px;
-$uni-spacing-col-lg: 12px;
+/* 垂直间距（兼容旧变量） */
+$uni-spacing-col-sm: 8px;
+$uni-spacing-col-base: 12px;
+$uni-spacing-col-lg: 16px;
 
 /* 透明度 */
-$uni-opacity-disabled: 0.3; // 组件禁用态的透明度
+$uni-opacity-disabled: 0.3;
 
 /* 文章场景相关 */
-$uni-color-title: #2c405a; // 文章标题颜色
+$uni-color-title: #2c405a;
 $uni-font-size-title: 20px;
-$uni-color-subtitle: #555; // 二级标题颜色
+$uni-color-subtitle: #555;
 $uni-font-size-subtitle: 18px;
-$uni-color-paragraph: #3f536e; // 文章段落颜色
+$uni-color-paragraph: #3f536e;
 $uni-font-size-paragraph: 15px;
 
 /* uView Plus Styles - Variables */
