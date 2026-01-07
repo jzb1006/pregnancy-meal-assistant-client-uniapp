@@ -9,6 +9,14 @@
 			}
 		},
 		{
+			"path": "pages/onboarding/onboarding",
+			"style": {
+				"navigationBarTitleText": "完善资料",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
 			"path": "pages/recommend/recommend",
 			"style": {
 				"navigationBarTitleText": "AI 营养师",
@@ -32,13 +40,6 @@
 				"navigationBarTitleText": "个人中心",
 				"navigationStyle": "custom",
 				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationBarTitleText": "登录",
-				"navigationStyle": "custom"
 			}
 		},
 		{
