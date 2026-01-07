@@ -1,11 +1,15 @@
 <template>
-  <view class="page-container">
+  <view class="page-container" :style="customStyle">
     <slot />
   </view>
 </template>
 
 <script setup lang="ts">
-// Page wrapper
+import { defineProps } from 'vue';
+
+defineProps<{
+  customStyle?: any
+}>();
 </script>
 
 <style lang="scss" scoped>
