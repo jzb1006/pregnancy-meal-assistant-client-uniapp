@@ -76,42 +76,39 @@ const unwrap = async (promise: Promise<any>) => {
 };
 
 // Food Safety API
-export const checkFoodSafety = (openId: string, query: string, onChunk: (text: string) => void) => {
+export const checkFoodSafety = (query: string, onChunk: (text: string) => void) => {
     return streamRequest({
         url: '/v1/food/check',
         method: 'GET',
-        data: { openId, query }
+        data: { query }
     }, onChunk);
 };
 
-export const getNutritionTip = (openId: string) => {
+export const getNutritionTip = () => {
     return unwrap(request({
         url: '/v1/food/tip',
-        method: 'GET',
-        data: { openId }
+        method: 'GET'
     }));
 };
 
 // Daily Meal API
-export const getDailyRecommendation = (openId: string) => {
+export const getDailyRecommendation = () => {
     return unwrap(request({
         url: '/v1/daily-meal/recommend',
-        method: 'GET',
-        data: { openId }
+        method: 'GET'
     }));
 };
 
-
-export const swapRecommendation = (openId: string) => {
+export const swapRecommendation = () => {
     return unwrap(request({
-        url: `/v1/daily-meal/swap?openId=${openId}&_t=${Date.now()}`,
+        url: `/v1/daily-meal/swap?_t=${Date.now()}`,
         method: 'POST',
         data: {}
     }));
 };
 
 // Meal History API
-export const getMealHistory = (params: HistorySearchParams) => {
+export const getMealHistory = (params: Omit<HistorySearchParams, 'openId'>) => {
     return unwrap(request({
         url: '/v1/meal/history',
         method: 'GET',
@@ -119,11 +116,10 @@ export const getMealHistory = (params: HistorySearchParams) => {
     }));
 };
 
-export const getMealDetail = (openId: string, recipeId: number) => {
+export const getMealDetail = (recipeId: number) => {
     return unwrap(request({
         url: `/v1/meal/history/${recipeId}`,
-        method: 'GET',
-        data: { openId }
+        method: 'GET'
     }));
 };
 

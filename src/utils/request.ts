@@ -1,24 +1,64 @@
+import { useUserStore } from '@/stores/user';
+
 const BASE_URL = 'http://192.168.4.20:8080/api';
 
 interface RequestOptions extends UniApp.RequestOptions {
     // Add any custom options here
+    skipAuth?: boolean; // 是否跳过认证（用于登录接口）
 }
+
+// 登录状态处理标志，防止重复触发登录
+let isRefreshingToken = false;
 
 export const request = (options: RequestOptions) => {
     return new Promise((resolve, reject) => {
+        const userStore = useUserStore();
+        
+        // 构建请求头
+        const headers: any = {
+            ...options.header,
+            'Content-Type': 'application/json'
+        };
+        
+        // 自动添加 Authorization 请求头（登录接口除外）
+        const isLoginApi = options.url?.includes('/v1/auth/wx/login');
+        if (!isLoginApi && !options.skipAuth) {
+            const token = userStore.getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log('[Request] 携带 token:', token.substring(0, 20) + '...');
+            } else {
+                console.warn('[Request] 未找到 token，但仍继续请求:', options.url);
+            }
+        }
+        
         uni.request({
             ...options,
             url: options.url?.startsWith('http') ? options.url : `${BASE_URL}${options.url}`,
-            header: {
-                ...options.header,
-                // 'Authorization': 'Bearer ' + token // If needed
-            },
+            header: headers,
             success: (res: any) => {
+                console.log('[Request] 响应:', options.url, 'status:', res.statusCode);
+                
+                // 处理认证失败 (401/403)
+                if (res.statusCode === 401 || res.statusCode === 403) {
+                    console.error('[Request] 认证失败 401/403');
+                    
+                    // 只清除 token，不要触发 reLaunch
+                    // 让用户手动重试或刷新页面
+                    userStore.clearAuth();
+                    
+                    reject({
+                        code: res.statusCode,
+                        message: '登录已过期，请下拉刷新页面'
+                    });
+                    return;
+                }
+                
                 // Global Error Handling for User Not Found
                 if (res.data && res.data.code === 500 && res.data.message && res.data.message.includes('用户不存在')) {
-                    uni.showToast({ title: '账户不存在，请重新登录或注册', icon: 'none' });
+                    uni.showToast({ title: '用户档案不存在，请完善档案', icon: 'none' });
                     setTimeout(() => {
-                        uni.reLaunch({ url: '/pages/login/login' });
+                        uni.navigateTo({ url: '/pages/profile/profile' });
                     }, 1500);
                     reject(res.data);
                     return;
@@ -32,6 +72,7 @@ export const request = (options: RequestOptions) => {
                 }
             },
             fail: (err) => {
+                console.error('[Request] 请求失败:', err);
                 reject(err);
             }
         });
