@@ -60,14 +60,21 @@ const ringStyle = computed(() => {
 
 <style lang="scss" scoped>
 .status-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 24px;
   padding: 24px;
   margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 10px 30px -10px rgba(253, 164, 175, 0.25);
+  box-shadow: 0 8px 24px rgba(255, 182, 193, 0.15);
+  transition: transform 0.2s;
+
+  &:active {
+      transform: scale(0.98);
+  }
 
   .content {
       flex: 1;
@@ -115,7 +122,7 @@ const ringStyle = computed(() => {
               top: 5px;
               width: 54px;
               height: 54px;
-              background: white;
+              background: rgba(255,255,255,0.9); /* also make this semi-transparent if needed, but solid white is usually better for contrast against the ring */
               border-radius: 50%;
               z-index: 1;
           }

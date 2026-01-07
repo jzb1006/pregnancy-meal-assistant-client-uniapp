@@ -204,11 +204,13 @@ watch(() => props.lmp, (val) => {
 
 <style lang="scss" scoped>
 .pregnancy-calendar {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 24px;
   padding: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 10px 30px -10px rgba(253, 164, 175, 0.25);
+  box-shadow: 0 8px 24px rgba(255, 182, 193, 0.15);
   transition: all 0.3s ease;
 
   &.expanded {
@@ -230,7 +232,7 @@ watch(() => props.lmp, (val) => {
       .toggle-btn {
           display: flex;
           align-items: center;
-          background: #f8fafc;
+          background: rgba(248, 250, 252, 0.5); /* slightly transparent */
           padding: 4px 10px;
           border-radius: 20px;
           .label { font-size: 12px; color: #64748b; margin-right: 4px; }
@@ -258,7 +260,7 @@ watch(() => props.lmp, (val) => {
           flex: 1;
           display: flex;
           justify-content: space-between;
-
+          
           .day-item {
               display: flex;
               flex-direction: column;
