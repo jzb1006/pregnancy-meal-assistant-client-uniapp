@@ -167,7 +167,7 @@ const handleSearch = async () => {
         const result: any = await request({
             url: '/v1/food/check-json',
             method: 'GET',
-            data: { openId: userStore.openId, query: searchText.value.trim() }
+            data: { query: searchText.value.trim() }
         });
         
         const elapsed = Date.now() - startTime;

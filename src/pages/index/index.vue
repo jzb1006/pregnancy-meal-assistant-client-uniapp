@@ -111,8 +111,7 @@ const moodOptions = [
 const fetchStatus = async () => {
     try {
         const res: any = await request({
-            url: '/v1/user/status',
-            data: { openId: userStore.openId }
+            url: '/v1/user/status'
         });
         
         if (res && (res.code === 200 || res.status === 200)) {
@@ -133,39 +132,86 @@ const fetchStatus = async () => {
 
 const fetchUserInfo = async () => {
     try {
-        const res: any = await request({
-            url: '/v1/user/info',
-            data: { openId: userStore.openId }
-        });
-        if (res && res.code === 200 && res.data) {
-             if (res.data.lmp) {
-                 lmp.value = dayjs(res.data.lmp).format('YYYY-MM-DD');
-             }
+        // 检查是否刚完成引导页
+        const onboardingCompleted = uni.getStorageSync('ONBOARDING_COMPLETED');
+        const profileCache = uni.getStorageSync('USER_PROFILE_CACHE');
+        
+        if (onboardingCompleted && profileCache) {
+            console.log('[Index] 检测到刚完成引导页，使用缓存数据');
+            // 使用缓存数据
+            if (profileCache.lmp) {
+                lmp.value = dayjs(profileCache.lmp).format('YYYY-MM-DD');
+            }
+            // 清除标记，下次正常检查
+            uni.removeStorageSync('ONBOARDING_COMPLETED');
+            // 缓存保留，可能用于其他页面
+            return;
         }
+        
+        const res: any = await request({
+            url: '/v1/user/info'
+        });
+        
+        console.log('[Index] 用户资料检查结果:', res);
+        console.log('[Index] lmp字段:', res?.data?.lmp);
+        console.log('[Index] lmp类型:', typeof res?.data?.lmp);
+        
+        // 检查响应是否有效
+        if (!res || res.code !== 200 || !res.data) {
+            console.log('[Index] 用户资料获取失败，跳转引导页');
+            uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+            return;
+        }
+        
+        // 检查必填字段（lmp 是核心字段）
+        // lmp 可能是字符串 "2025-01-01"、数组 [2025,1,1]、或 null
+        const hasValidLmp = res.data.lmp && (
+            typeof res.data.lmp === 'string' && res.data.lmp.length > 0 ||
+            Array.isArray(res.data.lmp) && res.data.lmp.length === 3
+        );
+        
+        if (!hasValidLmp) {
+            console.log('[Index] 用户资料不完整（lmp无效），跳转引导页');
+            uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+            return;
+        }
+        
+        // 资料完整，更新数据和缓存
+        lmp.value = dayjs(res.data.lmp).format('YYYY-MM-DD');
+        console.log('[Index] 用户资料完整，lmp:', lmp.value);
+        
+        // 更新缓存
+        uni.setStorageSync('USER_PROFILE_CACHE', {
+            lmp: res.data.lmp,
+            birthDate: res.data.birthDate,
+            height: res.data.height,
+            weight: res.data.weight,
+            cuisinePreference: res.data.cuisinePreference,
+            preferences: res.data.preferences,
+            dietaryRestrictions: res.data.dietaryRestrictions,
+            timestamp: Date.now()
+        });
+        
     } catch (e) {
-        console.error('Fetch info failed', e);
+        console.error('[Index] Fetch info failed:', e);
+        // 网络错误等异常情况，不强制跳转，避免影响用户体验
     }
 }
 
 
 
 const fetchDailyEncouragement = async (mood?: string) => {
-    if (!userStore.openId) {
-        console.warn('DailyEncouragement: No openId found, skipping request');
-        return;
-    }
-    
     // Only show loading if we are actively selecting a mood (generating)
     if (mood) {
         encouragementLoading.value = true;
     }
     
-    console.log(`DailyEncouragement: Fetching for openId=${userStore.openId}, mood=${mood || 'CHECK_MODE'}`);
+    console.log(`DailyEncouragement: Fetching, mood=${mood || 'CHECK_MODE'}`);
     
     try {
-        let url = `/v1/user/daily-encouragement?openId=${userStore.openId}`;
+        let url = `/v1/user/daily-encouragement`;
         if (mood) {
-            url += `&mood=${mood}`;
+            url += `?mood=${mood}`;
         }
 
         const res: any = await request({

@@ -173,11 +173,6 @@ const pregnancyTips = [
 ];
 
 const startRecommend = async () => {
-    if (!userStore.openId) {
-        uni.showToast({ title: '请先登录', icon: 'none' });
-        return;
-    }
-    
     // Reset
     generating.value = true;
     content.value = '正在连接 AI...';
@@ -189,7 +184,7 @@ const startRecommend = async () => {
         const result: any = await request({
             url: '/v1/meal/recommend',
             method: 'GET',
-            data: { openId: userStore.openId, mealType: currentType.value }
+            data: { mealType: currentType.value }
         });
         
         // Parse result
@@ -218,7 +213,6 @@ const handleFeedback = async (action: 'LIKE' | 'DISLIKE') => {
             url: '/v1/feedback',
             method: 'POST',
             data: {
-                openId: userStore.openId,
                 recipeId: resultData.value.id, // Assuming ID is in result
                 action: action,
                 reason: action === 'DISLIKE' ? 'Not interested' : undefined

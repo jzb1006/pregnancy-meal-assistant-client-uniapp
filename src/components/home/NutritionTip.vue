@@ -26,19 +26,15 @@ const fallbackTips = [
 ];
 
 onMounted(async () => {
-  if (userStore.openId) {
-    try {
-      const res = await getNutritionTip(userStore.openId);
-      if (res) {
-        currentTip.value = res;
-      } else {
-        useFallback();
-      }
-    } catch (e) {
-      console.error(e);
+  try {
+    const res = await getNutritionTip();
+    if (res) {
+      currentTip.value = res;
+    } else {
       useFallback();
     }
-  } else {
+  } catch (e) {
+    console.error(e);
     useFallback();
   }
 });

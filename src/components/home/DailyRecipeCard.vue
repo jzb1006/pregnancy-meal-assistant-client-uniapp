@@ -72,7 +72,7 @@ let intervalId: number | null = null;
 
 const loadDailyRecommendation = async () => {
   try {
-    const result: any = await getDailyRecommendation(userStore.openId);
+    const result: any = await getDailyRecommendation();
     
     // Direct assignment as backend now returns MealVO structure
     recipe.value = result as MealVO;
@@ -83,9 +83,7 @@ const loadDailyRecommendation = async () => {
 };
 
 onMounted(() => {
-  if (userStore.openId) {
-    loadDailyRecommendation();
-  }
+  loadDailyRecommendation();
 });
 
 onUnmounted(() => {
@@ -115,7 +113,7 @@ const handleMore = async () => {
     const startTime = Date.now();
     
     try {
-        const result: any = await swapRecommendation(userStore.openId);
+        const result: any = await swapRecommendation();
         
         recipe.value = result as MealVO;
         

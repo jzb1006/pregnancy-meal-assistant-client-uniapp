@@ -351,12 +351,8 @@ const confirmWeight = (e: any) => {
 }
 
 const fetchInfo = async () => {
-    if (!userStore.openId) {
-        // Just allow view for now, maybe show skeleton
-        return; 
-    }
     try {
-        const res: any = await request({ url: '/v1/user/info', data: { openId: userStore.openId } });
+        const res: any = await request({ url: '/v1/user/info' });
         if (res && res.code === 200 && res.data) {
              const data = res.data;
              model.lmp = data.lmp ? dayjs(data.lmp).format('YYYY-MM-DD') : '';
@@ -386,7 +382,6 @@ const submit = async () => {
     loading.value = true;
     try {
         const payload = {
-            openId: userStore.openId,
             lmp: model.lmp,
             birthDate: model.birthDate,
             height: model.height,

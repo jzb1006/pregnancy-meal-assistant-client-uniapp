@@ -160,8 +160,6 @@ const updateLoadStatus = () => {
 }
 
 const fetchData = async (append = false) => {
-    if (!userStore.openId) return;
-    
     if (!append) {
         loading.value = true;
         currentPage.value = 1;
@@ -169,7 +167,6 @@ const fetchData = async (append = false) => {
     
     try {
         const params: any = {
-            openId: userStore.openId,
             page: currentPage.value,
             size: pageSize.value
         };
@@ -200,7 +197,6 @@ const fetchData = async (append = false) => {
     } catch (e) {
         console.error('获取历史记录失败:', e);
         console.error('请求参数:', {
-            openId: userStore.openId,
             searchKeyword: searchKeyword.value,
             feedbackFilter: feedbackFilter.value,
             mealTypeFilter: mealTypeFilter.value,
@@ -244,12 +240,10 @@ const clearFilters = () => {
 }
 
 const goToDetail = async (item: any) => {
-    if (!userStore.openId) return;
-    
     uni.showLoading({ title: '加载中...' });
     
     try {
-        const detail: MealVO = await getMealDetail(userStore.openId, item.id);
+        const detail: MealVO = await getMealDetail(item.id);
         
         // 存储到本地，供详情页使用
         uni.setStorageSync('CURRENT_RECIPE_DETAIL', detail);
@@ -263,7 +257,6 @@ const goToDetail = async (item: any) => {
     } catch (e) {
         console.error('获取菜单详情失败:', e);
         console.error('请求参数:', {
-            openId: userStore.openId,
             recipeId: item.id,
             dishName: item.dishName
         });
@@ -284,7 +277,6 @@ const handleFeedback = async (item: any, action: 'LIKE' | 'DISLIKE') => {
             url: '/v1/feedback',
             method: 'POST',
             data: {
-                openId: userStore.openId,
                 recipeId: item.id,
                 action: action,
                 reason: action === 'DISLIKE' ? 'Not interested' : undefined
@@ -305,7 +297,6 @@ const handleFeedback = async (item: any, action: 'LIKE' | 'DISLIKE') => {
     } catch (e) {
         console.error('反馈提交异常:', e);
         console.error('请求参数:', {
-            openId: userStore.openId,
             recipeId: item.id,
             action: action,
             dishName: item.dishName
