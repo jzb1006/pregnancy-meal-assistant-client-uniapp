@@ -62,6 +62,20 @@
 				"navigationBarTitleText": "产检时光轴",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/tools/fetal-movement/index",
+			"style": {
+				"navigationBarTitleText": "数胎动",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/tools/contraction/index",
+			"style": {
+				"navigationBarTitleText": "宫缩计时器",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {
