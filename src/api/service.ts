@@ -1,5 +1,11 @@
 
 import request, { streamRequest } from '@/utils/request';
+import type {
+    PrenatalCheckTimelineVO,
+    PrenatalCheckToggleRequest,
+    PrenatalCheckItemVO,
+    NextPrenatalCheckVO
+} from '@/types/prenatal';
 
 // DTOs (Simplified for Frontend)
 export interface FoodCheckResponse {
@@ -123,6 +129,42 @@ export const getMealDetail = (recipeId: number) => {
     }));
 };
 
+// Prenatal Check API
+/**
+ * 获取产检时光轴
+ * @returns 产检时光轴数据,包含当前孕周和分组的产检项目列表
+ */
+export const getPrenatalTimeline = (): Promise<PrenatalCheckTimelineVO> => {
+    return unwrap(request({
+        url: '/v1/prenatal-check/timeline',
+        method: 'GET'
+    }));
+};
+
+/**
+ * 切换产检完成状态
+ * @param requestData 切换请求参数
+ * @returns 更新后的产检项目信息
+ */
+export const togglePrenatalCheck = (requestData: PrenatalCheckToggleRequest): Promise<PrenatalCheckItemVO> => {
+    return unwrap(request({
+        url: '/v1/prenatal-check/toggle',
+        method: 'POST',
+        data: requestData
+    }));
+};
+
+/**
+ * 获取下次产检信息
+ * @returns 下一个未完成的产检项目信息
+ */
+export const getNextPrenatalCheck = (): Promise<NextPrenatalCheckVO> => {
+    return unwrap(request({
+        url: '/v1/prenatal-check/next',
+        method: 'GET'
+    }));
+};
+
 // 添加默认导出以确保文件被依赖分析识别
 export default {
     checkFoodSafety,
@@ -130,5 +172,8 @@ export default {
     getDailyRecommendation,
     swapRecommendation,
     getMealHistory,
-    getMealDetail
+    getMealDetail,
+    getPrenatalTimeline,
+    togglePrenatalCheck,
+    getNextPrenatalCheck
 };

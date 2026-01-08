@@ -22,7 +22,11 @@
             </view>
             <view class="right">
                 <text class="date">{{ nextVisit.week }}周</text>
-                <view class="check-btn" :class="{ checked: nextVisit.done }" @click="toggleCheck(nextVisit)">
+                <!-- 待产状态不显示复选框,显示完成图标 -->
+                <view v-if="nextVisit.id === 'all-done'" class="done-badge">
+                    <text class="icon">✓</text>
+                </view>
+                <view v-else class="check-btn" :class="{ checked: nextVisit.done }" @click="toggleCheck(nextVisit)">
                     <text class="icon">{{ nextVisit.done ? '✓' : '○' }}</text>
                 </view>
             </view>
@@ -85,106 +89,82 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import PageContainer from '@/components/common/PageContainer.vue';
+import { getPrenatalTimeline, togglePrenatalCheck } from '@/api/service';
+import type { PrenatalCheckGroupVO, PrenatalCheckItemVO } from '@/types/prenatal';
 
-interface CareItem {
-    id: string;
-    week: string;
-    title: string;
-    shortDesc: string;
-    details: string;
-    tips?: string;
-    done: boolean;
+// 扩展类型以包含前端UI状态
+interface CareItem extends PrenatalCheckItemVO {
     expanded: boolean;
 }
 
-interface CareGroup {
-    title: string;
-    icon: string;
+interface CareGroup extends Omit<PrenatalCheckGroupVO, 'items'> {
     items: CareItem[];
 }
 
-const currentWeek = ref(16); // Mock current week
+const currentWeek = ref(0);
 const statusBarHeight = uni.getSystemInfoSync().statusBarHeight || 20;
+const timelineGroups = ref<CareGroup[]>([]);
+const loading = ref(false);
+const error = ref('');
 
 const goBack = () => {
     uni.navigateBack();
-}
+};
 
-// Mock Data
-const timelineGroups = ref<CareGroup[]>([
-    {
-        title: '孕早期 (1-13周)',
-        icon: '🌱',
-        items: [
-            {
-                id: '1', week: '6-8', title: '首次产检', shortDesc: '确认宫内孕、胎心胎芽',
-                details: 'B超检查确认是否为宫内孕，查看胎心胎芽是否正常发育。建立母子健康手册。',
-                tips: '记得空腹验血哦。',
-                done: true, expanded: false
-            },
-            {
-                id: '2', week: '11-13', title: 'NT检查', shortDesc: '早期唐氏筛查',
-                details: '通过B超测量胎儿颈后透明层厚度，评估染色体异常风险。',
-                tips: '主要看宝宝配合程度，不需要空腹。',
-                done: false, expanded: false
-            }
-        ]
-    },
-    {
-        title: '孕中期 (14-27周)',
-        icon: '👶',
-        items: [
-            {
-                id: '3', week: '15-20', title: '唐氏筛查', shortDesc: '中期唐筛 / 无创DNA',
-                details: '抽取孕妇静脉血，检测胎儿患唐氏综合征的风险。',
-                tips: '空腹抽血，建议上午进行。',
-                done: false, expanded: false
-            },
-            {
-                id: '4', week: '20-24', title: '大排畸', shortDesc: '四维彩超',
-                details: '系统性筛查胎儿结构畸形，包括面部、四肢、内脏等。',
-                tips: '可以吃点巧克力让宝宝活跃一点。',
-                done: false, expanded: false
-            },
-            {
-                id: '5', week: '24-28', title: '糖耐量试验', shortDesc: '筛查妊娠糖尿病',
-                details: '口服75g葡萄糖，分别在空腹、1小时、2小时抽血检测血糖。',
-                tips: '前一晚清淡饮食，检查期间禁食禁水。',
-                done: false, expanded: false
-            }
-        ]
-    },
-    {
-        title: '孕晚期 (28-40周)',
-        icon: '🤱',
-        items: [
-            {
-                id: '6', week: '28-30', title: '小排畸', shortDesc: '晚期B超筛查',
-                details: '再次确认胎儿生长发育情况，补漏筛查。',
-                done: false, expanded: false
-            },
-            {
-                id: '7', week: '36-37', title: '胎位监测', shortDesc: '评估分娩方式',
-                details: '检查胎位（头位/臀位），骨盆测量，确定生产方式。',
-                done: false, expanded: false
-            }
-        ]
+// 加载产检时光轴数据
+const loadTimeline = async () => {
+    loading.value = true;
+    error.value = '';
+    
+    try {
+        const data = await getPrenatalTimeline();
+        
+        // 设置当前孕周
+        currentWeek.value = data.currentWeek || 0;
+        
+        // 转换数据并添加expanded状态
+        timelineGroups.value = data.groups.map(group => ({
+            ...group,
+            items: group.items.map(item => ({
+                ...item,
+                expanded: false
+            }))
+        }));
+        
+        console.log('[产检时光轴] 数据加载成功:', data);
+    } catch (err: any) {
+        console.error('[产检时光轴] 加载失败:', err);
+        error.value = err.message || '加载失败，请稍后重试';
+        uni.showToast({
+            title: error.value,
+            icon: 'none',
+            duration: 2000
+        });
+    } finally {
+        loading.value = false;
     }
-]);
+};
 
-// Determine "Next Visit": First Undone item
+// 下次产检: 第一个未完成的项目
 const nextVisit = computed(() => {
     for (const group of timelineGroups.value) {
         for (const item of group.items) {
             if (!item.done) return item;
         }
     }
-    // All done mock
-    return { title: '待产', week: '40', done: false };
+    // 全部完成 - 与后端getNextCheck()返回值保持一致
+    return { 
+        title: '待产', 
+        week: '40', 
+        done: false, 
+        id: 'all-done',  // 使用后端定义的特殊标识
+        shortDesc: '所有产检已完成', 
+        details: '恭喜您完成了所有产检项目,安心待产吧!' 
+    };
 });
 
 const isItemActive = (item: CareItem) => {
-    // Check if item week range includes current week (simplified logic)
+    // 检查项目孕周范围是否包含当前孕周
     const weeks = item.week.split('-').map(Number);
     if (weeks.length === 2) {
         return currentWeek.value >= weeks[0] && currentWeek.value <= weeks[1];
@@ -192,9 +172,40 @@ const isItemActive = (item: CareItem) => {
     return false;
 };
 
-const toggleCheck = (item: any) => {
-    item.done = !item.done;
-    uni.vibrateShort({ type: 'light' });
+const toggleCheck = async (item: CareItem) => {
+    const newStatus = !item.done;
+    
+    try {
+        // 调用API切换状态
+        const updatedItem = await togglePrenatalCheck({
+            templateCode: item.id,
+            done: newStatus,
+            checkDate: newStatus ? new Date().toISOString().split('T')[0] : undefined
+        });
+        
+        // 更新本地状态
+        item.done = updatedItem.done;
+        item.checkDate = updatedItem.checkDate;
+        
+        // 震动反馈
+        uni.vibrateShort({ type: 'light' });
+        
+        // 提示
+        uni.showToast({
+            title: newStatus ? '已标记完成' : '已取消完成',
+            icon: 'success',
+            duration: 1500
+        });
+        
+        console.log('[产检时光轴] 状态切换成功:', updatedItem);
+    } catch (err: any) {
+        console.error('[产检时光轴] 状态切换失败:', err);
+        uni.showToast({
+            title: err.message || '操作失败',
+            icon: 'none',
+            duration: 2000
+        });
+    }
 };
 
 const toggleDetails = (item: CareItem) => {
@@ -202,7 +213,7 @@ const toggleDetails = (item: CareItem) => {
 };
 
 onMounted(() => {
-    // In real app, load state from storage
+    loadTimeline();
 });
 
 </script>
@@ -261,6 +272,23 @@ onMounted(() => {
             align-items: center;
             gap: 12px;
             .date { font-size: 14px; color: #94A3B8; font-weight: 500; }
+            
+            .done-badge {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: #10B981;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                
+                .icon {
+                    font-size: 16px;
+                    color: white;
+                    font-weight: bold;
+                }
+            }
+            
             .check-btn {
                 width: 32px;
                 height: 32px;
