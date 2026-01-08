@@ -48,6 +48,20 @@
 				"navigationBarTitleText": "食谱详情",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/weight/index",
+			"style": {
+				"navigationBarTitleText": "体重管理",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/care/index",
+			"style": {
+				"navigationBarTitleText": "产检时光轴",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {

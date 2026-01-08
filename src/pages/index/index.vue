@@ -62,6 +62,24 @@
          />
      </view>
 
+     <!-- 3.5 Quick Tools -->
+     <view class="tools-section fade-in-entry delay-4">
+        <view class="tool-card" @click="navigateTo('/pages/weight/index')">
+            <view class="icon-bg weight-bg">⚖️</view>
+            <view class="info">
+                <text class="name">体重管理</text>
+                <text class="desc">记录身体变化</text>
+            </view>
+        </view>
+        <view class="tool-card" @click="navigateTo('/pages/care/index')">
+            <view class="icon-bg care-bg">🗓️</view>
+            <view class="info">
+                <text class="name">产检时光</text>
+                <text class="desc">守护宝宝健康</text>
+            </view>
+        </view>
+     </view>
+
      <!-- 4. Food Search (Tool) -->
      <view class="fade-in-entry delay-4">
         <FoodSearchEntry @open="showFoodSearch = true" />
@@ -251,6 +269,10 @@ const navigateToProfile = () => {
     uni.switchTab({ url: '/pages/profile/profile' });
 }
 
+const navigateTo = (url: string) => {
+    uni.navigateTo({ url });
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -436,6 +458,48 @@ const navigateToProfile = () => {
             padding: 12px;
             border-radius: 12px;
             border-left: 3px solid #F43F5E;
+        }
+    }
+}
+
+.tools-section {
+    display: flex;
+    gap: 12px;
+    padding: 0 20px;
+    margin-bottom: 24px;
+    
+    .tool-card {
+        flex: 1;
+        background: #fff;
+        border-radius: 20px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 12px rgba(148, 163, 184, 0.08);
+        transition: transform 0.2s;
+        
+        &:active { transform: scale(0.98); }
+        
+        .icon-bg {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            
+            &.weight-bg { background: #FFF1F2; }
+            &.care-bg { background: #EFF6FF; }
+        }
+        
+        .info {
+            display: flex;
+            flex-direction: column;
+            
+            .name { font-size: 15px; font-weight: 600; color: #334155; }
+            .desc { font-size: 11px; color: #94A3B8; margin-top: 2px; }
         }
     }
 }
