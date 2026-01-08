@@ -78,6 +78,20 @@
                 <text class="desc">守护宝宝健康</text>
             </view>
         </view>
+        <view class="tool-card" @click="navigateTo('/pages/tools/fetal-movement/index')">
+            <view class="icon-bg fetal-bg">👣</view>
+            <view class="info">
+                <text class="name">数胎动</text>
+                <text class="desc">早中晚各一次</text>
+            </view>
+        </view>
+        <view class="tool-card" @click="navigateTo('/pages/tools/contraction/index')">
+            <view class="icon-bg contraction-bg">⏱️</view>
+            <view class="info">
+                <text class="name">宫缩计时</text>
+                <text class="desc">临产征兆监测</text>
+            </view>
+        </view>
      </view>
 
      <!-- 4. Food Search (Tool) -->
@@ -464,12 +478,16 @@ const navigateTo = (url: string) => {
 
 .tools-section {
     display: flex;
+    flex-wrap: wrap; /* Allow wrapping for 2x2 grid */
     gap: 12px;
+    padding: 0 20px;
+    margin-bottom: 24px;
     padding: 0 20px;
     margin-bottom: 24px;
     
     .tool-card {
-        flex: 1;
+        width: calc(50% - 6px); /* 2 cards per row */
+        flex: none; /* Disable flex grow/shrink */
         background: #fff;
         border-radius: 20px;
         padding: 16px;
@@ -492,6 +510,8 @@ const navigateTo = (url: string) => {
             
             &.weight-bg { background: #FFF1F2; }
             &.care-bg { background: #EFF6FF; }
+            &.fetal-bg { background: #F0FDF4; }
+            &.contraction-bg { background: #FFF7ED; }
         }
         
         .info {
