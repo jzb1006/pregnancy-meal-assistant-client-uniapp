@@ -99,13 +99,13 @@
 			},
 			{
 				"pagePath": "pages/recommend/recommend",
-				"text": "点餐",
+				"text": "饮食",
 				"iconPath": "static/tab/chat.png",
 				"selectedIconPath": "static/tab/chat-active.png"
 			},
 			{
 				"pagePath": "pages/history/history",
-				"text": "历史",
+				"text": "记录",
 				"iconPath": "static/tab/clock.png",
 				"selectedIconPath": "static/tab/clock-active.png"
 			},
