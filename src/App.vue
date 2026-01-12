@@ -27,7 +27,7 @@ onLaunch(async () => {
   const userStore = useUserStore();
   
   // 检查是否已有 token
-  if (userStore.isTokenValid()) {
+  if (userStore.hasToken) {
     console.log("[App] 检测到本地 token，检查用户资料");
     await checkUserProfile();
     return;

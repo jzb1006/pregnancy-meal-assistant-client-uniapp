@@ -5,73 +5,75 @@ export const useUserStore = defineStore('user', {
         token: uni.getStorageSync('token') || '',
         openId: uni.getStorageSync('openId') || '',
         userInfo: null as any,
+        avatarUrl: uni.getStorageSync('userAvatar') || '', // Persist avatar
+        nickName: uni.getStorageSync('userNickname') || '', // Persist nickname
         isLogin: false
     }),
-    
+
     getters: {
         // 检查是否已登录
         hasToken: (state) => !!state.token,
-        // 获取用户昵称
-        nickname: (state) => state.userInfo?.nickname || '孕妈妈'
+        // 获取用户昵称 (Priority: Store > UserInfo > Default)
+        nickname: (state) => state.nickName || state.userInfo?.nickname || '准妈妈',
+        // 获取头像
+        avatar: (state) => state.avatarUrl || state.userInfo?.avatar || '/static/logo.png'
     },
-    
+
     actions: {
-        // 设置 token
+        // ... existing actions ...
         setToken(token: string) {
             this.token = token;
             this.isLogin = true;
             uni.setStorageSync('token', token);
         },
-        
-        // 获取 token
-        getToken(): string {
-            return this.token || uni.getStorageSync('token') || '';
+
+        getToken() {
+            return this.token;
         },
-        
-        // 检查 token 是否有效
-        isTokenValid(): boolean {
-            // 优先检查内存中的 token，如果没有则从 Storage 读取
-            const token = this.token || uni.getStorageSync('token');
-            const isValid = !!token && token.length > 0;
-            console.log('[UserStore] isTokenValid:', isValid, 'token length:', token?.length || 0);
-            return isValid;
+
+        setLoginInfo(info: { token: string; openId: string; userInfo?: any }) {
+            this.token = info.token;
+            this.openId = info.openId;
+            this.userInfo = info.userInfo || null;
+            this.isLogin = true;
+            uni.setStorageSync('token', info.token);
+            uni.setStorageSync('openId', info.openId);
         },
-        
-        // 设置 openId
-        setOpenId(id: string) {
-            this.openId = id;
-            uni.setStorageSync('openId', id);
+
+        // ... existing actions ...
+
+        // 新增：单独更新头像
+        setAvatar(url: string) {
+            this.avatarUrl = url;
+            uni.setStorageSync('userAvatar', url);
         },
-        
-        // 设置用户信息
-        setUserInfo(info: any) {
-            this.userInfo = info;
+
+        // 新增：单独更新昵称
+        setNickname(name: string) {
+            this.nickName = name;
+            uni.setStorageSync('userNickname', name);
         },
-        
-        // 设置登录信息（一次性设置 token + openId + userInfo）
-        setLoginInfo(data: { token: string; openId: string; userInfo?: any }) {
-            this.setToken(data.token);
-            this.setOpenId(data.openId);
-            if (data.userInfo) {
-                this.setUserInfo(data.userInfo);
-            }
-        },
-        
+
+        // ... existing actions ...
+
         // 清除所有认证信息
         clearAuth() {
             this.token = '';
             this.openId = '';
             this.userInfo = null;
+            this.avatarUrl = '';
+            this.nickName = '';
             this.isLogin = false;
             uni.removeStorageSync('token');
             uni.removeStorageSync('openId');
+            uni.removeStorageSync('userAvatar');
+            uni.removeStorageSync('userNickname');
         },
-        
-        // 退出登录
+
         logout() {
             this.clearAuth();
-            // 跳转到首页（会被 App.vue 拦截重新登录）
-            uni.reLaunch({ url: '/pages/index/index' });
-        }
+        },
+
+        // ... existing actions ...
     }
 });

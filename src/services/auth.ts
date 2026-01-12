@@ -40,15 +40,15 @@ export interface WxLoginResult {
 export async function wxLogin(): Promise<WxLoginResult> {
     try {
         console.log('[Auth] ========== 开始微信静默登录 ==========');
-        
+
         // Step 1: 获取微信登录凭证
         console.log('[Auth] Step 1: 调用 uni.login() 获取微信 code...');
         const loginRes = await uni.login({
             provider: 'weixin'
         });
-        
+
         console.log('[Auth] uni.login() 返回结果:', JSON.stringify(loginRes));
-        
+
         // uni.login 返回格式：[err, res] 或直接返回 res
         // 兼容两种格式
         let code: string;
@@ -59,7 +59,7 @@ export async function wxLogin(): Promise<WxLoginResult> {
             // 直接返回对象格式 {errMsg, code}
             code = (loginRes as any).code;
         }
-        
+
         if (!code) {
             console.error('[Auth] ❌ 获取微信登录凭证失败', loginRes);
             return {
@@ -68,21 +68,21 @@ export async function wxLogin(): Promise<WxLoginResult> {
                 message: '获取微信登录凭证失败，请检查微信配置'
             };
         }
-        
+
         console.log('[Auth] ✅ 获取到微信 code:', code.substring(0, 10) + '...');
-        
+
         // Step 2: 调用后端登录接口
         console.log('[Auth] Step 2: 调用后端接口 /v1/auth/wx/login');
         console.log('[Auth] 请求参数:', { code: code.substring(0, 10) + '...' });
-        
+
         const response = await request({
             url: '/v1/auth/wx/login',
             method: 'POST',
             data: { code }
         }) as any;
-        
+
         console.log('[Auth] 后端接口响应:', JSON.stringify(response));
-        
+
         // Step 3: 检查响应
         if (response.code !== 200 || !response.data) {
             console.error('[Auth] ❌ 后端登录接口返回错误');
@@ -95,13 +95,13 @@ export async function wxLogin(): Promise<WxLoginResult> {
                 message: response.message || response.msg || '登录失败，请重试'
             };
         }
-        
+
         const loginData: LoginResponse = response.data;
         console.log('[Auth] ✅ 登录成功！');
         console.log('[Auth] openId:', loginData.openId);
         console.log('[Auth] token:', loginData.token ? loginData.token.substring(0, 20) + '...' : 'null');
         console.log('[Auth] isNewUser:', loginData.isNewUser);
-        
+
         // Step 4: 保存登录信息到 Store
         console.log('[Auth] Step 3: 保存登录信息到 Store...');
         const userStore = useUserStore();
@@ -111,7 +111,7 @@ export async function wxLogin(): Promise<WxLoginResult> {
             userInfo: loginData.userInfo
         });
         console.log('[Auth] ✅ 登录信息已保存');
-        
+
         // Step 5: 返回登录结果
         console.log('[Auth] ========== 微信登录流程完成 ==========');
         return {
@@ -119,7 +119,7 @@ export async function wxLogin(): Promise<WxLoginResult> {
             isNewUser: loginData.isNewUser,
             userInfo: loginData.userInfo
         };
-        
+
     } catch (error: any) {
         console.error('[Auth] ❌❌❌ 微信登录异常 ❌❌❌');
         console.error('[Auth] 错误类型:', error.constructor.name);
@@ -141,7 +141,7 @@ export async function wxLogin(): Promise<WxLoginResult> {
  */
 export function checkLoginStatus(): boolean {
     const userStore = useUserStore();
-    return userStore.isTokenValid();
+    return userStore.hasToken;
 }
 
 /**
@@ -152,10 +152,10 @@ export function checkLoginStatus(): boolean {
  */
 export async function handleLoginExpired(): Promise<WxLoginResult> {
     console.log('[Auth] Token 已过期，执行重新登录...');
-    
+
     const userStore = useUserStore();
     userStore.clearAuth();
-    
+
     // 执行重新登录
     return await wxLogin();
 }
