@@ -76,6 +76,13 @@
 				"navigationBarTitleText": "宫缩计时器",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/tools/hospital-bag/index",
+			"style": {
+				"navigationBarTitleText": "待产包清单",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {

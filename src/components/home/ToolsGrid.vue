@@ -51,6 +51,12 @@ const tools = [
     theme: 'theme-contraction' 
   },
   { 
+    name: '待产包', 
+    icon: '👜', 
+    path: '/pages/tools/hospital-bag/index',
+    theme: 'theme-bag' 
+  },
+  { 
     name: '能吃吗', 
     icon: '🔍', 
     action: 'FOOD_SEARCH',
@@ -117,6 +123,8 @@ const handleToolClick = (tool: any) => {
         &.theme-fetal { background: #F0FDF4; color: #22C55E; }
         &.theme-contraction { background: #FFF7ED; color: #F97316; }
         &.theme-food { background: #F5F3FF; color: #8B5CF6; }
+        &.theme-bag { background: #ECFEFF; color: #06B6D4; }
+
     }
     
     .label {
