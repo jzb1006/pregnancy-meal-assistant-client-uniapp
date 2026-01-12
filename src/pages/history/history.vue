@@ -1,6 +1,6 @@
 <template>
   <PageContainer>
-    <u-navbar title="历史记录" @leftClick="goBack" :placeholder="true" autoBack></u-navbar>
+    <u-navbar title="记录" @leftClick="goBack" :placeholder="true" autoBack></u-navbar>
     
     <!-- 搜索栏 -->
     <HistorySearchBar v-model="searchKeyword" @search="handleSearch" />
@@ -46,35 +46,33 @@
               :key="item.id"
               @click="goToDetail(item)"
             >
-                <view class="card-header">
+                <view class="card-status-bar">
+                    <text class="date">{{ formatDate(item.createTime) }}</text>
                     <view class="tag" :class="getMealTypeClass(item.mealType)">
                         {{ getMealTypeLabel(item.mealType) }}
                     </view>
-                    <text class="date">{{ formatDate(item.createTime) }}</text>
                 </view>
                 
-                <view class="card-body">
+                <view class="card-main">
                     <text class="dish-name">{{ item.dishName || '未知食谱' }}</text>
                     <text class="reason">{{ item.reason }}</text>
                 </view>
                 
-                <view class="card-footer">
+                <view class="card-actions">
                     <view 
                         class="action-btn-wrapper"
                         @click.stop="handleFeedback(item, 'DISLIKE')"
                     >
-                        <view class="action-btn dislike" :class="{ active: item.feedbackAction === 'DISLIKE' }">
-                            <text class="icon" :class="{ 'anim-shake': item.feedbackAction === 'DISLIKE' }">👎</text>
-                            <text class="label">{{ item.feedbackAction === 'DISLIKE' ? '已不感兴趣' : '不感兴趣' }}</text>
-                        </view>
+                         <view class="icon-btn dislike" :class="{ active: item.feedbackAction === 'DISLIKE' }">
+                            <text class="emoji" :class="{ 'anim-shake': item.feedbackAction === 'DISLIKE' }">👎</text>
+                         </view>
                     </view>
                     <view 
                         class="action-btn-wrapper"
                         @click.stop="handleFeedback(item, 'LIKE')"
                     >
-                        <view class="action-btn like" :class="{ active: item.feedbackAction === 'LIKE' }">
-                            <text class="icon" :class="{ 'anim-pop': item.feedbackAction === 'LIKE' }">❤️</text>
-                            <text class="label">{{ item.feedbackAction === 'LIKE' ? '已收藏' : '收藏' }}</text>
+                        <view class="icon-btn like" :class="{ active: item.feedbackAction === 'LIKE' }">
+                            <text class="emoji" :class="{ 'anim-pop': item.feedbackAction === 'LIKE' }">❤️</text>
                         </view>
                     </view>
                 </view>
@@ -147,7 +145,7 @@ const getMealTypeClass = (type: string) => {
 }
 
 const formatDate = (time: string) => {
-    return dayjs(time).format('YYYY-MM-DD');
+    return dayjs(time).format('MM月DD日 · HH:mm');
 }
 
 // 更新加载状态
@@ -343,60 +341,71 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .content-container {
-    padding: 10px;
-    padding-bottom: 100px;
+    padding: 16px 20px;
+    padding-bottom: 120px; /* Space for tab bar */
+    min-height: 100vh;
+    box-sizing: border-box;
+    /* Warm Paper Gradient */
+    background: linear-gradient(180deg, #fdfbf7 0%, #fff 100%); 
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .history-card {
-    background: #fff;
-    border-radius: 24px;
+    background: #ffffff;
+    border-radius: 20px;
     padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.03), 
+        0 1px 2px rgba(0, 0, 0, 0.02); /* Soft layered shadow */
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
     &:active {
-        transform: scale(0.98);
-        box-shadow: 0 5px 20px -5px rgba(0, 0, 0, 0.08);
+        transform: scale(0.99);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
 
-    .card-header {
+    .card-status-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
-
-        .tag {
-            font-size: 11px;
-            padding: 6px 14px;
-            border-radius: 100px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-
-            &.breakfast { background: #fff7ed; color: #f97316; }
-            &.lunch { background: #f0fdf4; color: #22c55e; }
-            &.dinner { background: #f3e8ff; color: #a855f7; }
-        }
-
+        margin-bottom: 12px;
+        
         .date {
-            font-size: 12px;
+            font-size: 13px;
             color: #94a3b8;
             font-weight: 500;
         }
+        
+        .tag {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            
+            &.breakfast { background: #fff7ed; color: #f97316; }
+            &.lunch { background: #f0fdf4; color: #16a34a; }
+            &.dinner { background: #f5f3ff; color: #8b5cf6; }
+        }
     }
-
-    .card-body {
-        margin-bottom: 20px;
+    
+    .card-main {
+        margin-bottom: 16px;
+        
         .dish-name {
             font-size: 18px;
             font-weight: 700;
             color: #334155;
             display: block;
             margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            line-height: 1.4;
         }
+        
         .reason {
             font-size: 14px;
             color: #64748b;
@@ -408,81 +417,36 @@ onReachBottom(() => {
             font-weight: 400;
         }
     }
-
-    .card-footer {
+    
+    .card-actions {
         display: flex;
-        align-items: center;
         justify-content: flex-end;
-        border-top: 1px solid #f8fafc;
-        padding-top: 16px;
         gap: 12px;
-
-        .action-btn-wrapper {
-            position: relative;
-        }
-
-        .action-btn {
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 36px;
-            padding: 0 16px;
-            border-radius: 18px;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             background: #f8fafc;
-            color: #94a3b8;
-            border: 1px solid transparent;
-
-            .icon {
-                font-size: 14px;
-                margin-right: 6px;
-                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-                display: inline-block;
+            transition: all 0.3s;
+            
+            .emoji {
+                font-size: 16px;
+                opacity: 0.5;
+                transition: all 0.3s;
             }
-
-            .label {
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.3px;
+            
+            &.like.active {
+                background: #fff1f2;
+                .emoji { opacity: 1; transform: scale(1.1); }
             }
-
-            // Button Types
-            &.like {
-                &:active {
-                    transform: scale(0.92);
-                }
-
-                &.active {
-                    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-                    color: #e11d48;
-                    box-shadow: 0 8px 20px -6px rgba(255, 154, 158, 0.5);
-                    border: 1px solid rgba(255, 255, 255, 0.4);
-
-                    .icon {
-                        color: #e11d48;
-                    }
-
-                    .label {
-                        color: #be123c;
-                    }
-                }
-            }
-
-            &.dislike {
-                &:active {
-                    transform: scale(0.92);
-                }
-
-                &.active {
-                    background: #f1f5f9;
-                    color: #475569;
-                    border: 1px solid #cbd5e1;
-                    
-                    .icon {
-                        filter: grayscale(1);
-                        opacity: 0.8;
-                    }
-                }
+            
+            &.dislike.active {
+                background: #f1f5f9;
+                .emoji { opacity: 1; }
             }
         }
     }
@@ -491,24 +455,16 @@ onReachBottom(() => {
 // Animations
 @keyframes pop {
     0% { transform: scale(1); }
-    40% { transform: scale(1.4); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1.1); }
 }
 
 @keyframes shake {
-    0% { transform: rotate(0deg); }
+    0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(-15deg); }
-    50% { transform: rotate(15deg); }
-    75% { transform: rotate(-8deg); }
-    100% { transform: rotate(0deg); }
+    75% { transform: rotate(15deg); }
 }
 
-.anim-pop {
-    animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.anim-shake {
-    animation: shake 0.5s ease-in-out forwards;
-}
+.anim-pop { animation: pop 0.4s ease-out forwards; }
+.anim-shake { animation: shake 0.4s ease-in-out forwards; }
 </style>

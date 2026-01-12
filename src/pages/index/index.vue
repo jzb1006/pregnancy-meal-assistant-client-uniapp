@@ -1,60 +1,21 @@
 <template>
   <PageContainer :customStyle="{ background: 'linear-gradient(180deg, #FDF2F4 0%, #FFFFFF 100%)', paddingTop: '10px' }">
 
-     <!-- 1. Status Card (Dashboard Core) -->
+     <!-- 1. Status Card (Dashboard Core & Mood Interaction) -->
      <view class="fade-in-entry delay-1">
         <StatusCard 
             :status="status"
             :loading="loading"
+            :lmp="lmp"
+            :dailyEncouragement="dailyEncouragement"
+            :encouragementLoading="encouragementLoading"
             @complete="navigateToProfile"
+            @moodSelect="onSelectMood"
         />
      </view>
 
-     <!-- 2. Daily Encouragement (Emotional Connection) -->
-    <view class="encouragement-section fade-in-entry delay-2">
-        <!-- 1. Mood Selector (Show if no encouragement yet) -->
-        <view class="mood-card glass-panel" v-if="!dailyEncouragement && !encouragementLoading">
-            <view class="card-header">
-                <text class="card-title">👋 准妈妈，今天心情怎么样？</text>
-            </view>
-            <view class="mood-grid">
-                <view 
-                    class="mood-item" 
-                    v-for="mood in moodOptions" 
-                    :key="mood.value"
-                    @click="onSelectMood(mood.value)"
-                >
-                    <view class="mood-icon-wrapper">
-                        <text class="mood-icon">{{ mood.icon }}</text>
-                    </view>
-                    <text class="mood-label">{{ mood.label }}</text>
-                </view>
-            </view>
-        </view>
-
-        <!-- 2. Loading State -->
-         <view class="loading-card glass-panel" v-if="encouragementLoading">
-            <text class="loading-icon">🤔</text>
-            <text class="loading-text">正在想悄悄话...</text>
-         </view>
-
-        <!-- 3. Result Card (Show if encouragement exists) -->
-        <view class="encouragement-card glass-panel" v-if="dailyEncouragement">
-            <view class="card-decoration-circle"></view>
-            <view class="card-header">
-                <text class="card-title">👶 宝宝悄悄话</text>
-                <view class="card-tag float-animation" v-if="dailyEncouragement.babySize">
-                    <text class="tag-text">宝宝像{{ dailyEncouragement.babySize }}</text>
-                </view>
-            </view>
-            <view class="card-content">
-                <text class="auth-text">"{{ dailyEncouragement.encouragement }}"</text>
-            </view>
-        </view>
-     </view>
-
-     <!-- 3. Week Calendar (Timeline) -->
-     <view class="fade-in-entry delay-3">
+     <!-- 2. Week Calendar (Timeline Context) -->
+     <view class="fade-in-entry delay-2">
          <WeekCalendar 
             :activeDate="activeDate"
             :lmp="lmp"
@@ -62,51 +23,14 @@
          />
      </view>
 
-     <!-- 3.5 Quick Tools -->
-     <view class="tools-section fade-in-entry delay-4">
-        <view class="tool-card" @click="navigateTo('/pages/weight/index')">
-            <view class="icon-bg weight-bg">⚖️</view>
-            <view class="info">
-                <text class="name">体重管理</text>
-                <text class="desc">记录身体变化</text>
-            </view>
-        </view>
-        <view class="tool-card" @click="navigateTo('/pages/care/index')">
-            <view class="icon-bg care-bg">🗓️</view>
-            <view class="info">
-                <text class="name">产检时光</text>
-                <text class="desc">守护宝宝健康</text>
-            </view>
-        </view>
-        <view class="tool-card" @click="navigateTo('/pages/tools/fetal-movement/index')">
-            <view class="icon-bg fetal-bg">👣</view>
-            <view class="info">
-                <text class="name">数胎动</text>
-                <text class="desc">早中晚各一次</text>
-            </view>
-        </view>
-        <view class="tool-card" @click="navigateTo('/pages/tools/contraction/index')">
-            <view class="icon-bg contraction-bg">⏱️</view>
-            <view class="info">
-                <text class="name">宫缩计时</text>
-                <text class="desc">临产征兆监测</text>
-            </view>
-        </view>
-     </view>
-
-     <!-- 4. Food Search (Tool) -->
+     <!-- 4. Tools Grid (Golden Zone) -->
      <view class="fade-in-entry delay-4">
-        <FoodSearchEntry @open="showFoodSearch = true" />
+        <ToolsGrid @foodSearch="showFoodSearch = true" />
      </view>
 
-     <!-- 5. Daily Recipe Recommendation -->
+     <!-- 5. Todo Tips (Dynamic Reminders) -->
      <view class="fade-in-entry delay-5">
-        <DailyRecipeCard />
-     </view>
-
-     <!-- 6. Nutrition Tip -->
-     <view class="fade-in-entry delay-6">
-        <NutritionTip />
+        <TodoTips ref="todoTipsRef" :status="status" />
      </view>
 
      <!-- Spacer for TabBar -->
@@ -122,7 +46,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { onShow, onPullDownRefresh, onLoad } from '@dcloudio/uni-app';
 import { useUserStore } from '@/stores/user';
 import { request } from '@/utils/request';
 import PageContainer from '@/components/common/PageContainer.vue';
@@ -131,10 +55,10 @@ import WeekCalendar from '@/components/home/WeekCalendar.vue';
 import StatusCard from '@/components/home/StatusCard.vue';
 import CustomTabBar from '@/components/common/CustomTabBar.vue';
 // New Imports
-import FoodSearchEntry from '@/components/home/FoodSearchEntry.vue';
+import ToolsGrid from '@/components/home/ToolsGrid.vue';
+// ... other imports
+import TodoTips from '@/components/home/TodoTips.vue';
 import FoodSearchModal from '@/components/home/FoodSearchModal.vue';
-import NutritionTip from '@/components/home/NutritionTip.vue';
-import DailyRecipeCard from '@/components/home/DailyRecipeCard.vue';
 
 import dayjs from 'dayjs';
 
@@ -147,6 +71,7 @@ const dailyEncouragement = ref<any>(null);
 const encouragementLoading = ref(false);
 
 const showFoodSearch = ref(false);
+const todoTipsRef = ref<InstanceType<typeof TodoTips> | null>(null);
 
 const moodOptions = [
     { label: '开心', value: 'HAPPY', icon: '😊' },
@@ -156,47 +81,56 @@ const moodOptions = [
     { label: '平静', value: 'CALM', icon: '😌' }
 ];
 
+onLoad(() => {
+    console.log('[Index] onLoad triggered');
+    fetchUserInfo();
+    fetchStatus();
+});
+
+onShow(() => {
+    console.log('[Index] onShow triggered');
+    // Ensure we fetch if not already done by onLoad (though redundancy is fine here for safety)
+    fetchUserInfo();
+    fetchStatus();
+    fetchDailyEncouragement(); 
+    
+    // Refresh Todo Status
+    if (todoTipsRef.value) {
+        todoTipsRef.value.checkStatus();
+    }
+});
 const fetchStatus = async () => {
+    console.log('[Index] Calling fetchStatus...');
     try {
         const res: any = await request({
             url: '/v1/user/status'
         });
+        console.log('[Index] fetchStatus result:', res);
         
         if (res && (res.code === 200 || res.status === 200)) {
             status.value = res.data;
         } else {
+             console.warn('[Index] fetchStatus returned non-200:', res);
              if (res.message) uni.showToast({ title: res.message, icon: 'none' });
         }
     } catch (e: any) {
-        console.error('Fetch status failed', e);
-        const errorData = e?.data || {};
-        const msg = errorData.message || errorData.msg; 
-        if (msg) funcShowToast(msg);
+        console.error('[Index] Fetch status failed', e);
     } finally {
         loading.value = false;
     }
 }
 
 const fetchUserInfo = async () => {
+    console.log('[Index] Calling fetchUserInfo...');
     try {
-        const onboardingCompleted = uni.getStorageSync('ONBOARDING_COMPLETED');
-        const profileCache = uni.getStorageSync('USER_PROFILE_CACHE');
-        
-        if (onboardingCompleted && profileCache) {
-            console.log('[Index] 检测到刚完成引导页，使用缓存数据');
-            if (profileCache.lmp) {
-                lmp.value = dayjs(profileCache.lmp).format('YYYY-MM-DD');
-            }
-            uni.removeStorageSync('ONBOARDING_COMPLETED');
-            return;
-        }
-        
+        // ALWAYS fetch fresh data to ensure we have the latest LMP and settings
         const res: any = await request({
             url: '/v1/user/info'
         });
+        console.log('[Index] fetchUserInfo result:', res);
         
         if (!res || res.code !== 200 || !res.data) {
-            uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+            console.warn('[Index] User info invalid');
             return;
         }
         
@@ -206,11 +140,13 @@ const fetchUserInfo = async () => {
         );
         
         if (!hasValidLmp) {
-            uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+            console.warn('[Index] User has no LMP');
+            // uni.reLaunch({ url: '/pages/onboarding/onboarding' });
             return;
         }
         
         lmp.value = dayjs(res.data.lmp).format('YYYY-MM-DD');
+        console.log('[Index] Set LMP to:', lmp.value);
         
         uni.setStorageSync('USER_PROFILE_CACHE', {
             lmp: res.data.lmp,
@@ -251,7 +187,7 @@ const fetchDailyEncouragement = async (mood?: string) => {
         }
     } catch (e) {
         if (mood) {
-             funcShowToast('获取鼓励失败，请稍后再试');
+             uni.showToast({ title: '获取鼓励失败', icon: 'none' });
         }
     } finally {
         if (mood) {
@@ -265,26 +201,12 @@ const onSelectMood = (moodValue: string) => {
     fetchDailyEncouragement(moodValue);
 }
 
-const funcShowToast = (title: string) => {
-    uni.showToast({ title, icon: 'none' });
-}
-
-onShow(() => {
-    fetchStatus();
-    fetchUserInfo();
-    fetchDailyEncouragement(); 
-});
-
 const setActiveDate = (date: string) => {
     activeDate.value = date;
 }
 
 const navigateToProfile = () => {
     uni.switchTab({ url: '/pages/profile/profile' });
-}
-
-const navigateTo = (url: string) => {
-    uni.navigateTo({ url });
 }
 
 </script>
@@ -302,7 +224,6 @@ const navigateTo = (url: string) => {
 .delay-3 { animation-delay: 0.3s; }
 .delay-4 { animation-delay: 0.4s; }
 .delay-5 { animation-delay: 0.5s; }
-.delay-6 { animation-delay: 0.6s; }
 
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
@@ -325,6 +246,8 @@ const navigateTo = (url: string) => {
 .mood-card {
     padding: 24px 20px;
     margin-bottom: 24px;
+    margin-left: 10px;
+    margin-right: 10px;
     
     .card-header {
         margin-bottom: 20px;
@@ -387,6 +310,8 @@ const navigateTo = (url: string) => {
 .loading-card {
     padding: 30px;
     margin-bottom: 24px;
+    margin-left: 10px;
+    margin-right: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -414,6 +339,8 @@ const navigateTo = (url: string) => {
 .encouragement-card {
     padding: 24px;
     margin-bottom: 24px;
+    margin-left: 10px;
+    margin-right: 10px;
     position: relative;
     overflow: hidden;
 
@@ -472,54 +399,6 @@ const navigateTo = (url: string) => {
             padding: 12px;
             border-radius: 12px;
             border-left: 3px solid #F43F5E;
-        }
-    }
-}
-
-.tools-section {
-    display: flex;
-    flex-wrap: wrap; /* Allow wrapping for 2x2 grid */
-    gap: 12px;
-    padding: 0 20px;
-    margin-bottom: 24px;
-    padding: 0 20px;
-    margin-bottom: 24px;
-    
-    .tool-card {
-        width: calc(50% - 6px); /* 2 cards per row */
-        flex: none; /* Disable flex grow/shrink */
-        background: #fff;
-        border-radius: 20px;
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        box-shadow: 0 4px 12px rgba(148, 163, 184, 0.08);
-        transition: transform 0.2s;
-        
-        &:active { transform: scale(0.98); }
-        
-        .icon-bg {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            
-            &.weight-bg { background: #FFF1F2; }
-            &.care-bg { background: #EFF6FF; }
-            &.fetal-bg { background: #F0FDF4; }
-            &.contraction-bg { background: #FFF7ED; }
-        }
-        
-        .info {
-            display: flex;
-            flex-direction: column;
-            
-            .name { font-size: 15px; font-weight: 600; color: #334155; }
-            .desc { font-size: 11px; color: #94A3B8; margin-top: 2px; }
         }
     }
 }

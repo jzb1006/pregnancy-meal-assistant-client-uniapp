@@ -70,18 +70,27 @@ const handleClear = () => {
 
 <style lang="scss" scoped>
 .search-bar-container {
-  padding: 12px 15px;
-  background: #fff;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 10px 20px;
+  background: transparent; /* Blend with page gradient */
+  position: relative;
+  z-index: 10;
 }
 
 .search-input-wrapper {
   display: flex;
   align-items: center;
-  background: #f8fafc;
-  border-radius: 20px;
-  padding: 8px 16px;
-  gap: 8px;
+  background: #fff;
+  border-radius: 100px;
+  padding: 10px 18px;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Soft Floating Shadow */
+  border: 1px solid rgba(255,255,255,0.6);
+  transition: all 0.3s ease;
+  
+  &:active {
+      transform: scale(0.99);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
   
   .search-input {
     flex: 1;
@@ -89,6 +98,8 @@ const handleClear = () => {
     color: #334155;
     border: none;
     background: transparent;
+    height: 24px;
+    line-height: 24px;
     
     &::placeholder {
       color: #94a3b8;

@@ -168,6 +168,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, computed } from 'vue'
 import { request } from '@/utils/request'
+import { safeParseDate } from '@/utils/date'
 import { onLoad } from '@dcloudio/uni-app'
 
 // --- Constants ---
@@ -189,17 +190,6 @@ const lastRecord = computed(() => historyList.value[0] || null)
 
 const goBack = () => {
     uni.navigateBack()
-}
-
-// Format helpers
-const safeParseDate = (dateStr: string | number) => {
-    if (!dateStr) return new Date()
-    if (typeof dateStr === 'number') return new Date(dateStr)
-    try {
-        return new Date(dateStr)
-    } catch (e) {
-        return new Date(dateStr.replace(/-/g, '/'))
-    }
 }
 
 const formatDate = (timestamp: string) => {

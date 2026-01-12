@@ -15,27 +15,54 @@
         <!-- Header Section -->
         <view class="header-bg">
             <view class="user-info">
-                <view class="avatar-box">
-                    <u-image src="/static/logo.png" width="70px" height="70px" shape="circle"></u-image>
+                <view class="avatar-col">
+                    <button 
+                        class="avatar-wrapper" 
+                        open-type="chooseAvatar" 
+                        @chooseavatar="onChooseAvatar"
+                    >
+                        <view class="avatar-box">
+                            <u-image :src="userStore.avatar" width="80px" height="80px" shape="circle"></u-image>
+                            <view class="edit-hint"><u-icon name="camera-fill" color="#333" size="14"></u-icon></view>
+                        </view>
+                    </button>
+                    <!-- <view class="hint-text">点击更换头像</view> -->
                 </view>
+
                 <view class="text-box">
-                    <text class="nickname">准妈妈</text>
-                    <text class="status-badge" v-if="pregnancyProgress.weeks >= 0">
-                        孕期 {{ pregnancyProgress.weeks }}周 + {{ pregnancyProgress.days }}天
-                    </text>
+                    <input 
+                        type="nickname" 
+                        class="nickname-input" 
+                        :value="userStore.nickname" 
+                        placeholder="点击同步微信昵称"
+                        @blur="onNicknameBlur"
+                        @change="onNicknameChange" 
+                    />
                 </view>
             </view>
+        </view>
             
-            <!-- Pregnancy Progress Card -->
+        <!-- Pregnancy Progress Card (Moved outside header to avoid clipping) -->
+        <view class="progress-card-container">
             <view class="progress-card">
+                 <view class="progress-header">
+                    <text class="p-title">已孕 {{ pregnancyProgress.weeks }}周 + {{ pregnancyProgress.days }}天</text>
+                    <view class="p-subtitle">
+                        <text>离预产期还有 {{ pregnancyProgress.totalDays ? Math.max(0, 280 - pregnancyProgress.totalDays) : 280 }} 天</text>
+                    </view>
+                 </view>
+
+                 <view class="progress-visual">
+                    <view class="bar" :style="{ width: progressPercentage + '%' }"></view>
+                 </view>
+
                  <view class="progress-row">
                      <view class="p-item">
                          <text class="label">末次月经</text>
-                         <text class="value">{{ model.lmp || '未设置' }}</text>
+                         <text class="value">{{ model.lmp || '-' }}</text>
                      </view>
-                     <view class="divider"></view>
-                     <view class="p-item">
-                         <text class="label">预产期 (预计)</text>
+                     <view class="p-item align-right">
+                         <text class="label">预产期</text>
                          <text class="value highlight">{{ derivedDueDate }}</text>
                      </view>
                  </view>
@@ -45,24 +72,26 @@
         <view class="card-area">
             <!-- Health Archive Card -->
              <view class="info-card">
-                <view class="card-header">
+                 <view class="card-header">
                     <view class="title-row">
-                        <u-icon name="file-text-fill" color="#f43f5e" size="20"></u-icon>
+                        <view class="icon-container pink">
+                            <u-icon name="file-text-fill" color="#fff" size="16"></u-icon>
+                        </view>
                         <text class="card-title">健康档案</text>
                     </view>
-                    <view class="edit-link" @click="startEdit">
-                        <u-icon name="edit-pen" color="#94a3b8" size="18"></u-icon>
+                    <view class="edit-btn" @click="startEdit">
                         <text>修改</text>
+                        <u-icon name="arrow-right" color="#94a3b8" size="12"></u-icon>
                     </view>
                 </view>
                 <view class="grid-info">
                     <view class="grid-item">
                         <text class="label">身高</text>
-                        <text class="val">{{ model.height }} <text class="unit">cm</text></text>
+                        <text class="val">{{ model.height }}<text class="unit">cm</text></text>
                     </view>
                     <view class="grid-item">
                         <text class="label">孕前体重</text>
-                        <text class="val">{{ model.weight }} <text class="unit">kg</text></text>
+                        <text class="val">{{ model.weight }}<text class="unit">kg</text></text>
                     </view>
                      <view class="grid-item">
                         <text class="label">BMI</text>
@@ -75,7 +104,9 @@
              <view class="info-card">
                 <view class="card-header">
                      <view class="title-row">
-                        <u-icon name="heart-fill" color="#f43f5e" size="20"></u-icon>
+                        <view class="icon-container orange">
+                            <u-icon name="heart-fill" color="#fff" size="16"></u-icon>
+                        </view>
                         <text class="card-title">饮食偏好</text>
                     </view>
                 </view>
@@ -287,8 +318,16 @@ const pregnancyProgress = computed(() => {
     
     return {
         weeks: Math.floor(diffDays / 7),
-        days: diffDays % 7
+        days: diffDays % 7,
+        totalDays: diffDays
     };
+});
+
+const progressPercentage = computed(() => {
+    const { totalDays } = pregnancyProgress.value;
+    if (!totalDays || totalDays <= 0) return 0;
+    const p = (totalDays / 280) * 100;
+    return Math.min(Math.max(p, 0), 100).toFixed(1);
 });
 
 const bmiValue = computed(() => {
@@ -368,6 +407,14 @@ const fetchInfo = async () => {
              model.cuisine = data.cuisinePreference || 'NO_PREFERENCE';
              model.preferences = data.preferences || '';
              model.taboo = data.dietaryRestrictions || '';
+
+             // Sync avatar/nickname from backend if available and local is default
+             if (data.nickname && data.nickname !== '准妈妈') {
+                 userStore.setNickname(data.nickname);
+             }
+             if (data.avatar && data.avatar !== '/static/logo.png') {
+                 userStore.setAvatar(data.avatar);
+             }
         }
     } catch (e) {
         console.error(e);
@@ -388,7 +435,9 @@ const submit = async () => {
             weight: model.weight,
             dietaryRestrictions: model.taboo,
             preferences: model.preferences,
-            cuisinePreference: model.cuisine
+            cuisinePreference: model.cuisine,
+            nickname: userStore.nickname, // Sync nickname
+            avatar: userStore.avatar      // Sync avatar path
         };
         const res: any = await request({ url: '/v1/user/profile', method: 'POST', data: payload });
         
@@ -407,6 +456,42 @@ const submit = async () => {
     }
 }
 
+const onChooseAvatar = (e: any) => {
+    const { avatarUrl } = e.detail;
+    if (avatarUrl) {
+        // Save to store (and potentially upload if we had an endpoint)
+        // Since we are pure frontend for now in this context, we just save the local path
+        // Note: Temp paths might expire, but for uni-app simple usage it's often okay for session
+        // Better: uni.saveFile to persist it locally
+        uni.saveFile({
+            tempFilePath: avatarUrl,
+            success: (saveRes) => {
+                userStore.setAvatar(saveRes.savedFilePath);
+                uni.showToast({ title: '头像已更新', icon: 'none' });
+            },
+            fail: () => {
+                // Fallback to temp path if save fails
+                userStore.setAvatar(avatarUrl);
+            }
+        });
+    }
+};
+
+const onNicknameBlur = (e: any) => {
+    const val = e.detail.value;
+    if (val) {
+        userStore.setNickname(val);
+    }
+};
+
+// Handle confirm/enter as well
+const onNicknameChange = (e: any) => {
+     const val = e.detail.value;
+    if (val) {
+        userStore.setNickname(val);
+    }
+}
+
 onMounted(() => {
     fetchInfo();
 });
@@ -421,137 +506,304 @@ onMounted(() => {
 }
 
 .header-bg {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-    padding: 100px 12px 60px 12px; /* Reduced side padding */
-    border-bottom-left-radius: 20px; /* Gently reduced radius */
-    border-bottom-right-radius: 20px;
+    background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+    padding: 120px 24px 80px 24px;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
     color: #fff;
     position: relative;
-    margin-bottom: 50px;
+    margin-bottom: 0px; /* Reduced margin since card is now outside */
+    box-shadow: 0 10px 30px rgba(255, 154, 158, 0.3);
+    overflow: hidden;
+
+    /* Decorative circles */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+    }
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 20px;
+        left: -30px;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+    }
     
     .user-info {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px; /* Reduced from 40px */
+        position: relative;
+        z-index: 2;
         
+        .avatar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 0;
+            margin-bottom: 16px;
+
+            .hint-text {
+                 font-size: 11px; 
+                 color: rgba(255,255,255,0.8); 
+                 margin-top: 6px;
+                 letter-spacing: 1px;
+            }
+        }
+
+        .avatar-wrapper {
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            position: relative;
+            
+            &::after { border: none; }
+        }
+
         .avatar-box {
-            border: 3px solid rgba(255,255,255,0.6);
+            border: 4px solid rgba(255,255,255,0.4);
             border-radius: 50%;
-            margin-right: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            position: relative;
+            padding: 3px;
+            
+            .edit-hint {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                background: #fff;
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                color: #333;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
         }
         
         .text-box {
-            .nickname {
-                font-size: 22px;
-                font-weight: bold;
-                display: block;
-                margin-bottom: 6px;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            }
-            .status-badge {
-                background: rgba(255,255,255,0.25);
-                backdrop-filter: blur(5px);
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 13px;
-                font-weight: 500;
-            }
-        }
-    }
-
-    .progress-card {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        padding: 20px;
-        position: absolute;
-        bottom: -30px;
-        left: 12px;
-        right: 12px;
-        box-shadow: 0 8px 20px rgba(255, 107, 129, 0.15);
-        color: #333;
-        
-        .progress-row {
             display: flex;
-            justify-content: space-around;
+            flex-direction: column;
             align-items: center;
             
-            .p-item {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                .label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-                .value { font-size: 16px; font-weight: bold; color: #475569; }
-                .highlight { color: #f43f5e; } /* Highlight Due Date */
+            .nickname-input {
+                font-size: 24px;
+                font-weight: 700;
+                color: #fff;
+                margin-bottom: 8px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                background: transparent;
+                border: none;
+                min-width: 120px;
+                height: 36px;
+                line-height: 36px;
+                text-align: center;
             }
-            .divider { width: 1px; height: 30px; background: #eee; }
         }
     }
 }
 
-.card-area {
-    padding: 0 10px;
-    
-    .info-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+.progress-card-container {
+    padding: 0 20px;
+    margin-top: -60px; /* Overlap header */
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 10;
 
-        .card-header {
+    .progress-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 28px;
+        padding: 24px 20px;
+        box-shadow: 0 15px 35px rgba(255, 154, 158, 0.2);
+        color: #333;
+        
+        .progress-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
             
-            .title-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                .card-title { font-size: 16px; font-weight: bold; color: #1e293b; }
+            .p-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1e293b;
             }
-            
-            .edit-link {
+            .p-subtitle {
+                font-size: 12px;
+                color: #64748b;
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                font-size: 13px;
-                color: #94a3b8;
+            }
+        }
+        
+        .progress-visual {
+            height: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            
+            .bar {
+                height: 100%;
+                background: linear-gradient(90deg, #ff9a9e, #f43f5e);
+                border-radius: 6px;
+                transition: width 1s ease-in-out;
+                box-shadow: 0 2px 6px rgba(244, 63, 94, 0.2);
+            }
+        }
+
+        .progress-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            .p-item {
+                display: flex;
+                flex-direction: column;
+                
+                .label { 
+                    font-size: 11px; 
+                    color: #94a3b8; 
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .value { 
+                    font-size: 15px; 
+                    font-weight: 700; 
+                    color: #334155; 
+                    font-family: 'DIN', sans-serif;
+                }
+                .highlight { color: #f43f5e; } /* Highlight Due Date */
+                
+                &.align-right {
+                    align-items: flex-end;
+                }
+            }
+            .divider { display: none; }
+        }
+    }
+}
+
+
+.card-area {
+    padding: 0 16px;
+    z-index: 10;
+    position: relative;
+    
+    .info-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        transition: transform 0.2s;
+
+        &:active {
+            transform: scale(0.995);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            
+            .title-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                
+                .icon-container {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                    
+                    &.pink { background: linear-gradient(135deg, #ff9a9e, #f43f5e); }
+                    &.orange { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+                }
+
+                .card-title { font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; }
+            }
+            
+            .edit-btn {
+                background: #f1f5f9;
+                padding: 6px 12px;
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 12px;
+                color: #64748b;
+                font-weight: 500;
             }
         }
         
         .grid-info {
             display: flex;
             justify-content: space-between;
-            padding: 0 10px;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px 24px;
             
             .grid-item {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                .label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
-                .val { font-size: 18px; font-weight: bold; color: #334155; }
-                .unit { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 2px;}
+                text-align: center;
+                
+                .label { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+                .val { 
+                    font-size: 18px; 
+                    font-weight: 700; 
+                    color: #334155; 
+                    font-family: 'DIN', sans-serif;
+                    white-space: nowrap;
+                    
+                    &.highlight { color: #f43f5e; }
+                }
+                .unit { font-size: 10px; color: #94a3b8; font-weight: normal; margin-left: 2px;}
             }
         }
 
         .pref-content {
             .pref-row {
-                margin-bottom: 8px;
+                margin-bottom: 12px;
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 font-size: 14px;
                 &:last-child { margin-bottom: 0; }
                 
                 .label {
                     color: #94a3b8;
-                    width: 80px;
+                    width: 70px;
                     flex-shrink: 0;
                 }
                 .text-val {
                     color: #475569;
-                    line-height: 1.4;
+                    font-weight: 500;
+                    flex: 1;
                 }
                 .tag-wrap { display: flex; }
             }
@@ -560,70 +812,72 @@ onMounted(() => {
     
     .menu-list {
         background: #fff;
-        border-radius: 16px;
+        border-radius: 24px;
         overflow: hidden;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        padding: 8px 0; /* Add some padding so items aren't crammed */
     }
     
     .logout-box {
-        margin-bottom: 40px;
+        margin-bottom: 60px;
+        padding: 0 20px;
     }
 }
 
 /* Edit Mode Unique Styles */
 .edit-container {
-    padding: 12px;
-    padding-top: 100px;
+    padding: 24px;
+    padding-top: 110px;
     background: #f8f9fc;
     min-height: 100vh;
-    padding-bottom: 150px; /* Space for sticky footer */
+    padding-bottom: 120px; /* Space for sticky footer */
 
     .form-card {
         background: #fff;
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 16px; /* Spacing between cards */
-        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-        border: 1px solid rgba(255,255,255,0.6);
+        border-radius: 28px;
+        padding: 24px;
+        margin-bottom: 24px; /* Spacing between cards */
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+        border: 1px solid rgba(255,255,255,0.8);
 
         .section-header {
             display: flex;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             
-            .emoji { font-size: 20px; margin-right: 8px; }
-            .title { font-size: 17px; font-weight: bold; color: #334155; }
+            .emoji { font-size: 22px; margin-right: 10px; }
+            .title { font-size: 18px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; }
         }
 
         .grid-row {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 0px; 
             .grid-col { flex: 1; min-width: 0; }
         }
 
         /* Bubble Input Styles */
         .bubble-input {
-            background: #f8fafc; /* Lighter background */
-            border-radius: 14px;
-            padding: 4px 12px;
+            background: #f1f5f9; /* Lighter background */
+            border-radius: 16px;
+            padding: 4px 16px;
             display: flex;
             align-items: center;
-            height: 46px;
+            height: 52px;
             width: 100%;
             transition: all 0.2s;
             border: 1px solid transparent;
             
             &:active {
-                background: #f1f5f9;
+                background: #e2e8f0;
             }
         }
         
         .bubble-textarea {
-            background: #f8fafc;
-            border-radius: 14px;
-            padding: 8px;
+            background: #f1f5f9;
+            border-radius: 16px;
+            padding: 12px;
             width: 100%;
         }
 
@@ -631,13 +885,13 @@ onMounted(() => {
         .cuisine-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             .cuisine-item-bubble {
-                padding: 8px 14px;
-                border-radius: 18px;
-                font-size: 12px;
+                padding: 10px 16px;
+                border-radius: 20px;
+                font-size: 13px;
                 color: #64748b;
-                background: #f8fafc;
+                background: #f1f5f9;
                 border: 1px solid transparent;
                 transition: all 0.2s;
                 font-weight: 500;
@@ -646,7 +900,7 @@ onMounted(() => {
                     background: #fff1f2;
                     color: #f43f5e;
                     border-color: #fecdd3;
-                    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.1);
+                    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
                 }
             }
         }
@@ -657,12 +911,13 @@ onMounted(() => {
             word-break: keep-all;
             color: #64748b !important;
             font-size: 13px !important;
-            margin-bottom: 4px !important;
+            margin-bottom: 8px !important;
+            font-weight: 600;
         }
         
         // Remove standard form item border
         :deep(.u-form-item__body) {
-            padding: 10px 0 !important;
+            padding: 12px 0 !important;
         }
     }
     
@@ -671,18 +926,21 @@ onMounted(() => {
         bottom: 0; 
         left: 0;
         right: 0;
-        background: #ffffff; /* Solid white */
-        padding: 12px 24px;
-        padding-bottom: calc(12px + constant(safe-area-inset-bottom));
-        padding-bottom: calc(12px + env(safe-area-inset-bottom));
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(10px);
+        padding: 16px 32px;
+        padding-bottom: calc(16px + constant(safe-area-inset-bottom));
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
         z-index: 100;
+        border-top-left-radius: 30px;
+        border-top-right-radius: 30px;
         
         .cancel-text {
             text-align: center;
             font-size: 14px;
             color: #94a3b8;
-            margin-top: 10px;
+            margin-top: 12px;
             padding-bottom: 0;
         }
     }

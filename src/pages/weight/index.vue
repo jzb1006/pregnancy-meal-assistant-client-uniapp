@@ -622,6 +622,11 @@ const saveRecord = async () => {
         currentRecordNote.value = '';
         
         uni.showToast({ title: '记录成功', icon: 'success' });
+        
+        // Cache for TodoTips
+        const today = dayjs().format('YYYY-MM-DD');
+        uni.setStorageSync('LAST_WEIGHT_DATE', today);
+        
         await loadData();
     } catch (error: any) {
         console.error('[Weight] 保存记录失败:', error);

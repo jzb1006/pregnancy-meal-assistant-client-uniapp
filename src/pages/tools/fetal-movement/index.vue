@@ -146,6 +146,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 import { request } from '@/utils/request'
+import { safeParseDate } from '@/utils/date'
 import { onLoad } from '@dcloudio/uni-app'
 
 // --- State ---
@@ -176,19 +177,6 @@ const fetchHistory = async () => {
   } catch (e) {
     console.error('Fetch history failed', e)
   }
-}
-
-const safeParseDate = (dateStr: string | number) => {
-    if (!dateStr) return new Date()
-    if (typeof dateStr === 'number') return new Date(dateStr)
-    // Handle iOS compatibility for "YYYY-MM-DD HH:mm:ss" or similar
-    // Note: ISO 8601 "T" usually works, but just in case
-    try {
-        return new Date(dateStr)
-    } catch (e) {
-        // Fallback: replace - with /
-        return new Date(dateStr.replace(/-/g, '/'))
-    }
 }
 
 const formatTime = (totalSeconds: number) => {
@@ -314,6 +302,10 @@ const finishSession = async () => {
       
       if (res && res.code === 200) {
            uni.showToast({ title: '记录已保存', icon: 'success' })
+           // Cache for TodoTips
+           const today = new Date().toISOString().split('T')[0]
+           uni.setStorageSync('LAST_FETAL_MOVEMENT_DATE', today)
+           
            fetchHistory() // Refresh list
       }
   } catch(e) {
