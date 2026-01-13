@@ -113,8 +113,8 @@ async function checkUserProfile() {
     );
     
     if (!res || res.code !== 200 || !res.data || !hasValidLmp) {
-      // 用户资料不完整，记录日志，让首页处理跳转逻辑
-      console.log("[App] 用户资料不完整，首页将处理跳转");
+      // 用户资料不完整，立即跳转到引导页
+      console.log("[App] 用户资料不完整，跳转到引导页");
       console.log("[App] 详细信息 - res:", res);
       console.log("[App] 详细信息 - res.data:", res?.data);
       console.log("[App] 详细信息 - res.data.lmp:", res?.data?.lmp);
@@ -124,6 +124,10 @@ async function checkUserProfile() {
       // 清除可能存在的旧缓存
       uni.removeStorageSync('USER_PROFILE_CACHE');
       uni.removeStorageSync('ONBOARDING_COMPLETED');
+      
+      // 立即跳转到引导页
+      uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+      return;
     } else {
       // 资料完整，更新缓存
       console.log("[App] 用户资料完整，进入首页");

@@ -1,6 +1,7 @@
 import { useUserStore } from '@/stores/user';
 
-const BASE_URL = 'http://192.168.4.20:8080/api';
+// const BASE_URL = 'http://www.hjkj.chat/api';
+const BASE_URL = 'http://203.195.202.54/api';
 
 interface RequestOptions extends UniApp.RequestOptions {
     // Add any custom options here

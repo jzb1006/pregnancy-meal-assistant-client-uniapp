@@ -140,8 +140,8 @@ const fetchUserInfo = async () => {
         );
         
         if (!hasValidLmp) {
-            console.warn('[Index] User has no LMP');
-            // uni.reLaunch({ url: '/pages/onboarding/onboarding' });
+            console.warn('[Index] User has no LMP, redirecting to onboarding');
+            uni.reLaunch({ url: '/pages/onboarding/onboarding' });
             return;
         }
         
